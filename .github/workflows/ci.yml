@@ -1,0 +1,74 @@
+name: CI
+
+# 何をする？
+#   PR と main への push のたびに、フォーマット・静的解析・テストを自動実行する。
+#   壊れたコードが main に入るのを防ぐのが目的。
+#
+# テスト方針
+#   - 単体テスト (test/): ウィジェット・ロジックを1件ずつ責務単位でテスト
+#   - 結合テスト (integration_test/): 実機/エミュレータが必要なため現在は CI から除外
+#   単体テストは Linux デスクトップターゲット (-d linux) で実行する。
+#   isar_flutter_libs は FFI プラグインのため、ヘッドレスの flutter test では
+#   ネイティブライブラリが初期化されず Isar が使えない。-d linux が必須。
+#
+# Firebase 非対応について(Phase 2以降で該当)
+#   firebase_auth / cloud_firestore は Linux デスクトップ向けのコンパイルが不可。
+#   これらを直接 import するテストファイルが増えてきたら、
+#   Firebase 非依存のテストのみを明示的に列挙する形に切り替える(tekushare-app実績あり)。
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  analyze-and-test:
+    name: Analyze & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. リポジトリのコードを取得
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Flutter SDK をセットアップ
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # 3. Linux デスクトップ向けシステム依存パッケージを取得
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev xvfb
+
+      # 4. 依存パッケージを取得
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 5. コード生成（*.g.dart / *.mocks.dart）
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      # 6. フォーマットチェック（差分があれば失敗）
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      # 7. 静的解析
+      - name: Analyze
+        run: flutter analyze
+
+      # 8. Linux デスクトップを有効化
+      - name: Enable Linux desktop
+        run: flutter config --enable-linux-desktop
+
+      # 9. libisar.so をプロジェクトルートにコピー（Isar が Directory.current で探すため）
+      - name: Prepare libisar.so for tests
+        run: cp "$(find ~/.pub-cache -name 'libisar.so' | head -1)" .
+
+      # 10. 単体テスト
+      - name: Run unit tests
+        run: xvfb-run flutter test -d linux --reporter expanded
