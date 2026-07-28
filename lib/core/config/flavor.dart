@@ -1,0 +1,31 @@
+/// アプリの実行環境。
+enum Flavor { dev, stg, prod }
+
+/// 現在のFlavorとFlavor別設定を保持するグローバル設定。
+///
+/// `main_dev.dart` / `main_stg.dart` / `main_prod.dart` が起動時に
+/// [setFlavor] を呼んで確定させる。
+class AppConfig {
+  AppConfig._();
+
+  static Flavor? _flavor;
+
+  static Flavor get flavor {
+    final flavor = _flavor;
+    assert(flavor != null, 'AppConfig.setFlavor() が呼ばれていません');
+    return flavor ?? Flavor.dev;
+  }
+
+  static void setFlavor(Flavor flavor) => _flavor = flavor;
+
+  static String get appName {
+    switch (flavor) {
+      case Flavor.dev:
+        return 'クマヨケール(dev)';
+      case Flavor.stg:
+        return 'クマヨケール(stg)';
+      case Flavor.prod:
+        return 'クマヨケール';
+    }
+  }
+}

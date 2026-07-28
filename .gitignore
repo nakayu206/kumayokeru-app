@@ -1,3 +1,37 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+android/build/
+*.iml
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+.metadata
+.packages
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+**/android/**/GeneratedPluginRegistrant.java
+
+# iOS/Xcode
+ios/Flutter/ephemeral/
+ios/Flutter/flutter_export_environment.sh
+ios/Pods/
+ios/.symlinks/
+ios/Runner.xcworkspace/xcuserdata/
+**/xcuserdata/
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+
 # Logs
 logs
 *.log
