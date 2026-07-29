@@ -30,7 +30,13 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          Text('存在通知機能', style: TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.fontMd)),
+          Text(
+            '存在通知機能',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: AppSizes.fontMd,
+            ),
+          ),
           const SizedBox(height: AppSpacing.sm),
           ListTile(
             contentPadding: EdgeInsets.zero,
@@ -38,9 +44,12 @@ class _SettingsPageState extends State<SettingsPage> {
             trailing: DropdownButton<int>(
               value: _intervalSec,
               items: const [15, 30, 60, 120]
-                  .map((sec) => DropdownMenuItem(value: sec, child: Text('$sec秒')))
+                  .map(
+                    (sec) => DropdownMenuItem(value: sec, child: Text('$sec秒')),
+                  )
                   .toList(),
-              onChanged: (value) => setState(() => _intervalSec = value ?? _intervalSec),
+              onChanged: (value) =>
+                  setState(() => _intervalSec = value ?? _intervalSec),
             ),
           ),
           ListTile(
@@ -53,7 +62,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 ButtonSegment(value: _SoundType.mixed, label: Text('混合')),
               ],
               selected: {_soundType},
-              onSelectionChanged: (selection) => setState(() => _soundType = selection.first),
+              onSelectionChanged: (selection) =>
+                  setState(() => _soundType = selection.first),
             ),
           ),
           ListTile(
