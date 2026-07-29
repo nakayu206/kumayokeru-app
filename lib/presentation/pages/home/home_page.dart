@@ -30,10 +30,20 @@ class _HomePageState extends State<HomePage> {
             children: [
               Text(
                 'クマヨケール',
-                style: TextStyle(fontSize: AppSizes.fontXl, fontWeight: FontWeight.bold, color: AppColors.primaryDark),
+                style: TextStyle(
+                  fontSize: AppSizes.fontXl,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryDark,
+                ),
               ),
               const SizedBox(height: AppSpacing.xs),
-              Text('登山のお守り', style: TextStyle(fontSize: AppSizes.fontMd, color: AppColors.textSecondary)),
+              Text(
+                '登山のお守り',
+                style: TextStyle(
+                  fontSize: AppSizes.fontMd,
+                  color: AppColors.textSecondary,
+                ),
+              ),
               const SizedBox(height: AppSpacing.lg),
               _CurrentLocationCard(),
               const SizedBox(height: AppSpacing.lg),
@@ -60,7 +70,11 @@ class _CurrentLocationCard extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Row(
           children: [
-            Icon(Icons.location_on, color: AppColors.primary, size: AppSizes.iconMd),
+            Icon(
+              Icons.location_on,
+              color: AppColors.primary,
+              size: AppSizes.iconMd,
+            ),
             const SizedBox(width: AppSpacing.sm),
             Text('現在地: ●●山 登山道', style: TextStyle(fontSize: AppSizes.fontLg)),
           ],
@@ -90,20 +104,33 @@ class _NotificationCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(Icons.notifications_active, color: AppColors.primaryDark),
+                    Icon(
+                      Icons.notifications_active,
+                      color: AppColors.primaryDark,
+                    ),
                     const SizedBox(width: AppSpacing.sm),
                     Text(
                       '存在通知: ${isNotifying ? "ON" : "OFF"}',
-                      style: TextStyle(fontSize: AppSizes.fontLg, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: AppSizes.fontLg,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
-                Switch(value: isNotifying, onChanged: onToggle, activeTrackColor: AppColors.primary),
+                Switch(
+                  value: isNotifying,
+                  onChanged: onToggle,
+                  activeTrackColor: AppColors.primary,
+                ),
               ],
             ),
             if (isNotifying) ...[
               const SizedBox(height: AppSpacing.sm),
-              Text('次回再生まで: ${AudioConstants.defaultIntervalSec}秒', style: TextStyle(color: AppColors.textSecondary)),
+              Text(
+                '次回再生まで: ${AudioConstants.defaultIntervalSec}秒',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
             ],
             const SizedBox(height: AppSpacing.md),
             SizedBox(
@@ -114,7 +141,9 @@ class _NotificationCard extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                  ),
                 ),
                 child: const Text('今すぐ鳴らす'),
               ),
@@ -143,7 +172,10 @@ class _SightingAlertBanner extends StatelessWidget {
           Icon(Icons.warning_amber_rounded, color: AppColors.warning),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text('この付近で3日前に目撃情報', style: TextStyle(color: AppColors.textPrimary)),
+            child: Text(
+              'この付近で3日前に目撃情報',
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
           ),
         ],
       ),

@@ -31,7 +31,13 @@ class LocationSharingPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('共有中のメンバー', style: TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.fontMd)),
+            Text(
+              '共有中のメンバー',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: AppSizes.fontMd,
+              ),
+            ),
             const SizedBox(height: AppSpacing.sm),
             for (final member in _dummyMembers)
               Card(
@@ -49,18 +55,27 @@ class LocationSharingPage extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
                 foregroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                ),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
             Row(
               children: [
-                Icon(Icons.info_outline, size: AppSizes.iconSm, color: AppColors.textSecondary),
+                Icon(
+                  Icons.info_outline,
+                  size: AppSizes.iconSm,
+                  color: AppColors.textSecondary,
+                ),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
                     '電波のない場所では更新されません',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: AppSizes.fontSm),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: AppSizes.fontSm,
+                    ),
                   ),
                 ),
               ],
@@ -76,7 +91,9 @@ class LocationSharingPage extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.danger,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                  ),
                 ),
               ),
             ),

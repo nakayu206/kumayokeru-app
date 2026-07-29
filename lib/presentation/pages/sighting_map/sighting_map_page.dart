@@ -8,7 +8,11 @@ import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 import 'package:kumayokeru_app/core/constants/map_constants.dart';
 
 class _DummySighting {
-  const _DummySighting({required this.date, required this.place, required this.isOfficial});
+  const _DummySighting({
+    required this.date,
+    required this.place,
+    required this.isOfficial,
+  });
 
   final String date;
   final String place;
@@ -36,7 +40,10 @@ class SightingMapPage extends StatelessWidget {
             flex: 3,
             child: FlutterMap(
               options: const MapOptions(
-                initialCenter: LatLng(MapConstants.defaultLat, MapConstants.defaultLng),
+                initialCenter: LatLng(
+                  MapConstants.defaultLat,
+                  MapConstants.defaultLng,
+                ),
                 initialZoom: MapConstants.defaultZoom,
               ),
               children: [
@@ -47,7 +54,10 @@ class SightingMapPage extends StatelessWidget {
                 const MarkerLayer(
                   markers: [
                     Marker(
-                      point: LatLng(MapConstants.defaultLat, MapConstants.defaultLng),
+                      point: LatLng(
+                        MapConstants.defaultLat,
+                        MapConstants.defaultLng,
+                      ),
                       child: Icon(Icons.my_location, color: AppColors.primary),
                     ),
                   ],
@@ -67,7 +77,9 @@ class SightingMapPage extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMd)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                  ),
                 ),
               ),
             ),
@@ -79,9 +91,16 @@ class SightingMapPage extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  child: Text('最新の目撃情報', style: TextStyle(fontWeight: FontWeight.bold, fontSize: AppSizes.fontMd)),
+                  child: Text(
+                    '最新の目撃情報',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: AppSizes.fontMd,
+                    ),
+                  ),
                 ),
-                for (final sighting in _dummySightings) _SightingTile(sighting: sighting),
+                for (final sighting in _dummySightings)
+                  _SightingTile(sighting: sighting),
               ],
             ),
           ),
@@ -103,7 +122,9 @@ class _SightingTile extends StatelessWidget {
       title: Text('${sighting.date} ${sighting.place}'),
       trailing: Chip(
         label: Text(sighting.isOfficial ? '自治体' : '投稿'),
-        backgroundColor: sighting.isOfficial ? AppColors.primaryLight : AppColors.warning.withValues(alpha: 0.15),
+        backgroundColor: sighting.isOfficial
+            ? AppColors.primaryLight
+            : AppColors.warning.withValues(alpha: 0.15),
       ),
     );
   }
