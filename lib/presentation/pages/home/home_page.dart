@@ -1,26 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kumayokeru_app/core/constants/app_colors.dart';
 import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
-import 'package:kumayokeru_app/core/constants/map_constants.dart';
+import 'package:kumayokeru_app/presentation/providers/presence_notification_providers.dart';
 
 /// ホーム画面(仕様書セクション12 ①)。
 ///
-/// TODO(#10): 存在通知ON/OFF・再生カウントダウンをRiverpod Providerと結合する。
+/// 存在通知音の再生(#10)はjust_audioで実装済み(フォアグラウンドのみ。
+/// バックグラウンド継続はPhase 0での実機検証待ち、infrastructure/notification_sound_player.dart参照)。
 /// TODO(#11): 出没情報アラートを実データと結合する。
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notificationState = ref.watch(presenceNotificationProvider);
+    final notifier = ref.read(presenceNotificationProvider.notifier);
 
-class _HomePageState extends State<HomePage> {
-  bool _isNotifying = true;
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -48,8 +46,9 @@ class _HomePageState extends State<HomePage> {
               _CurrentLocationCard(),
               const SizedBox(height: AppSpacing.lg),
               _NotificationCard(
-                isNotifying: _isNotifying,
-                onToggle: (value) => setState(() => _isNotifying = value),
+                state: notificationState,
+                onToggle: (value) => value ? notifier.start() : notifier.stop(),
+                onPlayNow: notifier.playNow,
               ),
               const SizedBox(height: AppSpacing.lg),
               const _SightingAlertBanner(),
@@ -85,13 +84,20 @@ class _CurrentLocationCard extends StatelessWidget {
 }
 
 class _NotificationCard extends StatelessWidget {
-  const _NotificationCard({required this.isNotifying, required this.onToggle});
+  const _NotificationCard({
+    required this.state,
+    required this.onToggle,
+    required this.onPlayNow,
+  });
 
-  final bool isNotifying;
+  final PresenceNotificationState state;
   final ValueChanged<bool> onToggle;
+  final VoidCallback onPlayNow;
 
   @override
   Widget build(BuildContext context) {
+    final isNotifying = state.isNotifying;
+
     return Card(
       color: AppColors.primaryLight,
       child: Padding(
@@ -128,7 +134,7 @@ class _NotificationCard extends StatelessWidget {
             if (isNotifying) ...[
               const SizedBox(height: AppSpacing.sm),
               Text(
-                '次回再生まで: ${AudioConstants.defaultIntervalSec}秒',
+                '次回再生まで: ${state.secondsUntilNextPlay}秒',
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             ],
@@ -137,7 +143,7 @@ class _NotificationCard extends StatelessWidget {
               width: double.infinity,
               height: AppSizes.buttonHeight,
               child: ElevatedButton(
-                onPressed: isNotifying ? () {} : null,
+                onPressed: onPlayNow,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
