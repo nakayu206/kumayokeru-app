@@ -54,8 +54,12 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       # 6. フォーマットチェック（差分があれば失敗）
+      #    *.g.dart はbuild_runnerが直前のステップで再生成したばかりで、
+      #    isar_generator等のジェネレータはdart format準拠の出力をしないため対象から除外する。
       - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed .
+        run: |
+          dart format --output=none --set-exit-if-changed \
+            $(git ls-files '*.dart' | grep -v '\.g\.dart$' | grep -v '\.mocks\.dart$')
 
       # 7. 静的解析
       - name: Analyze
