@@ -59,8 +59,12 @@ class SightingsRemoteDataSource {
         body: jsonEncode({
           'lat': lat,
           'lng': lng,
-          'description': ?description,
-          'areaName': ?areaName,
+          // isar_generatorが内部で使う古いanalyzerがnull-aware map entry構文(`'key': ?value`)を
+          // 解析できずCIのコード生成が失敗するため、あえてif文で書く。
+          // ignore: use_null_aware_elements
+          if (description != null) 'description': description,
+          // ignore: use_null_aware_elements
+          if (areaName != null) 'areaName': areaName,
         }),
       );
     } on Exception catch (e) {
