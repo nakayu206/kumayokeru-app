@@ -4,6 +4,7 @@ import 'package:kumayokeru_app/core/constants/app_colors.dart';
 import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 import 'package:kumayokeru_app/core/constants/map_constants.dart';
+import 'package:kumayokeru_app/presentation/pages/auth/login_page.dart';
 
 enum _SoundType { bell, voice, mixed }
 
@@ -82,6 +83,16 @@ class _SettingsPageState extends State<SettingsPage> {
             value: _powerSavingMode,
             onChanged: (value) => setState(() => _powerSavingMode = value),
             activeTrackColor: AppColors.primary,
+          ),
+          const Divider(height: AppSpacing.x3l),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.account_circle_outlined),
+            title: const Text('アカウント(仲間との共有に必要)'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const LoginPage())),
           ),
           const Divider(height: AppSpacing.x3l),
           ListTile(
