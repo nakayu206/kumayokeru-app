@@ -64,6 +64,9 @@ dependencies:
   # kumayokeru-backend(出没情報API等)との通信
   http: ^1.2.2
 
+  # 設定値の永続化
+  shared_preferences: ^2.3.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
