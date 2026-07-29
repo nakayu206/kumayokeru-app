@@ -1,31 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kumayokeru_app/core/constants/app_colors.dart';
 import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
-import 'package:kumayokeru_app/core/constants/map_constants.dart';
+import 'package:kumayokeru_app/domain/entities/notification_settings.dart';
 import 'package:kumayokeru_app/presentation/pages/auth/login_page.dart';
-
-enum _SoundType { bell, voice, mixed }
+import 'package:kumayokeru_app/presentation/providers/settings_providers.dart';
 
 /// 設定画面(仕様書セクション12 ④)。
 ///
-/// TODO(#13): 各設定値の永続化(Isar/shared_preferences)と結合する。
-class SettingsPage extends StatefulWidget {
+/// 各設定値はshared_preferencesに永続化され、アプリ起動時に復元される(#13)。
+class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(audioSettingsProvider);
+    final notifier = ref.read(audioSettingsProvider.notifier);
 
-class _SettingsPageState extends State<SettingsPage> {
-  int _intervalSec = AudioConstants.defaultIntervalSec;
-  _SoundType _soundType = _SoundType.bell;
-  double _volume = AudioConstants.defaultVolume;
-  bool _powerSavingMode = false;
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('設定')),
       body: ListView(
@@ -43,36 +36,46 @@ class _SettingsPageState extends State<SettingsPage> {
             contentPadding: EdgeInsets.zero,
             title: const Text('再生間隔'),
             trailing: DropdownButton<int>(
-              value: _intervalSec,
+              value: settings.intervalSec,
               items: const [15, 30, 60, 120]
                   .map(
                     (sec) => DropdownMenuItem(value: sec, child: Text('$sec秒')),
                   )
                   .toList(),
-              onChanged: (value) =>
-                  setState(() => _intervalSec = value ?? _intervalSec),
+              onChanged: (value) {
+                if (value != null) notifier.setIntervalSec(value);
+              },
             ),
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('音源選択'),
-            trailing: SegmentedButton<_SoundType>(
+            trailing: SegmentedButton<NotificationSoundType>(
               segments: const [
-                ButtonSegment(value: _SoundType.bell, label: Text('鈴音')),
-                ButtonSegment(value: _SoundType.voice, label: Text('声')),
-                ButtonSegment(value: _SoundType.mixed, label: Text('混合')),
+                ButtonSegment(
+                  value: NotificationSoundType.bell,
+                  label: Text('鈴音'),
+                ),
+                ButtonSegment(
+                  value: NotificationSoundType.voice,
+                  label: Text('声'),
+                ),
+                ButtonSegment(
+                  value: NotificationSoundType.mixed,
+                  label: Text('混合'),
+                ),
               ],
-              selected: {_soundType},
+              selected: {settings.soundType},
               onSelectionChanged: (selection) =>
-                  setState(() => _soundType = selection.first),
+                  notifier.setSoundType(selection.first),
             ),
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('音量'),
             subtitle: Slider(
-              value: _volume,
-              onChanged: (value) => setState(() => _volume = value),
+              value: settings.volume,
+              onChanged: notifier.setVolume,
               activeColor: AppColors.primary,
             ),
           ),
@@ -80,8 +83,8 @@ class _SettingsPageState extends State<SettingsPage> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('省電力モード'),
-            value: _powerSavingMode,
-            onChanged: (value) => setState(() => _powerSavingMode = value),
+            value: settings.powerSavingMode,
+            onChanged: notifier.setPowerSavingMode,
             activeTrackColor: AppColors.primary,
           ),
           const Divider(height: AppSpacing.x3l),
