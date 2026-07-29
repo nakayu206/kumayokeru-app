@@ -28,11 +28,12 @@ storeFile=<キーストアファイルの絶対パス>
 (`signingConfig = signingConfigs.getByName("debug")`)。本番リリース前に上記key.propertiesを
 読み込む`signingConfigs.create("release")`に差し替えること。
 
-## 3. AWS Cognito / API Gatewayの本番エンドポイント確認(Phase2以降)
+## 3. kumayokeru-backendの本番エンドポイント確認(Phase2以降)
 
 FirebaseのようなGoogleサービス側の`google-services.json`は不要。代わりに
-[環境構築手順.md](環境構築手順.md)セクション10の手順でAWS Amplifyの
-`amplifyconfiguration.dart`をprod環境向けに再生成し、`lib/`に配置されているか確認する。
+[環境構築手順.md](環境構築手順.md)セクション10の通り、prod flavorが
+kumayokeru-backendの本番URL(`https://57-182-248-130.sslip.io`、将来的に独自ドメインへ変更の可能性あり)を
+向いているか確認する。
 
 ## 4. リリースビルドの確認
 

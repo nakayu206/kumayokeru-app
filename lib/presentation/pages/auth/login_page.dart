@@ -7,7 +7,7 @@ import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 /// ログイン/新規登録画面。
 ///
 /// TekuShareのEmailAuthPageと同じメール+パスワード認証フローを踏襲する。
-/// TODO(#15): AWS Cognito(amplify_auth_cognito)による実際の認証呼び出しと結合する。
+/// TODO(#15): kumayokeru-backend(JWT + bcrypt)による実際の認証呼び出しと結合する。
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -309,7 +309,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     }
 
-    // TODO(#15): ここでAWS Cognito(amplify_auth_cognito)への実際のサインアップ/サインインを呼び出す。
+    // TODO(#15): ここでkumayokeru-backend(JWT + bcrypt)への実際のサインアップ/サインインを呼び出す。
     setState(() {
       if (_isRegisterMode) {
         _registered = true;

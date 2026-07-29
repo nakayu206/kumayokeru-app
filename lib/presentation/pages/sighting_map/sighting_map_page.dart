@@ -1,37 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:kumayokeru_app/core/constants/app_colors.dart';
 import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 import 'package:kumayokeru_app/core/constants/map_constants.dart';
-
-class _DummySighting {
-  const _DummySighting({
-    required this.date,
-    required this.place,
-    required this.isOfficial,
-  });
-
-  final String date;
-  final String place;
-  final bool isOfficial;
-}
-
-const _dummySightings = [
-  _DummySighting(date: '2026/07/25', place: '●●林道付近', isOfficial: false),
-  _DummySighting(date: '2026/07/23', place: '●●峠', isOfficial: true),
-];
+import 'package:kumayokeru_app/domain/entities/sighting.dart';
+import 'package:kumayokeru_app/presentation/providers/sighting_providers.dart';
 
 /// 出没情報マップ画面(仕様書セクション12 ②)。
 ///
-/// TODO(#11): flutter_map上のピンとリストを実データ(Isar)と結合する。
-class SightingMapPage extends StatelessWidget {
+/// kumayokeru-backend(https://57-182-248-130.sslip.io)の`GET /sightings`から取得した実データを表示する。
+/// TODO(#11): Isarへのキャッシュ(オフライン閲覧用)、距離絞り込みと結合する。
+/// TODO(#12): 「目撃情報を投稿する」ボタンから`POST /sightings`への投稿を実装する。
+class SightingMapPage extends ConsumerWidget {
   const SightingMapPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sightingsAsync = ref.watch(sightingsProvider);
+
     return Scaffold(
       appBar: AppBar(title: const Text('出没情報マップ')),
       body: Column(
@@ -51,14 +41,30 @@ class SightingMapPage extends StatelessWidget {
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.kumayokeru.app',
                 ),
-                const MarkerLayer(
+                MarkerLayer(
                   markers: [
-                    Marker(
+                    const Marker(
                       point: LatLng(
                         MapConstants.defaultLat,
                         MapConstants.defaultLng,
                       ),
                       child: Icon(Icons.my_location, color: AppColors.primary),
+                    ),
+                    ...sightingsAsync.maybeWhen(
+                      data: (sightings) => sightings.map(
+                        (sighting) => Marker(
+                          point: LatLng(sighting.lat, sighting.lng),
+                          child: Icon(
+                            Icons.pets,
+                            color:
+                                sighting.sourceType ==
+                                    SightingSourceType.official
+                                ? AppColors.primaryDark
+                                : AppColors.warning,
+                          ),
+                        ),
+                      ),
+                      orElse: () => const <Marker>[],
                     ),
                   ],
                 ),
@@ -86,22 +92,36 @@ class SightingMapPage extends StatelessWidget {
           ),
           Expanded(
             flex: 2,
-            child: ListView(
+            child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: sightingsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, _) => Center(
                   child: Text(
-                    '最新の目撃情報',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: AppSizes.fontMd,
-                    ),
+                    '出没情報の取得に失敗しました\n$error',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ),
-                for (final sighting in _dummySightings)
-                  _SightingTile(sighting: sighting),
-              ],
+                data: (sightings) => ListView(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpacing.sm,
+                      ),
+                      child: Text(
+                        '最新の目撃情報',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: AppSizes.fontMd,
+                        ),
+                      ),
+                    ),
+                    for (final sighting in sightings)
+                      _SightingTile(sighting: sighting),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -113,16 +133,23 @@ class SightingMapPage extends StatelessWidget {
 class _SightingTile extends StatelessWidget {
   const _SightingTile({required this.sighting});
 
-  final _DummySighting sighting;
+  final SightingPost sighting;
 
   @override
   Widget build(BuildContext context) {
+    final isOfficial = sighting.sourceType == SightingSourceType.official;
+    final date =
+        '${sighting.sightedAt.year}/${sighting.sightedAt.month.toString().padLeft(2, '0')}/${sighting.sightedAt.day.toString().padLeft(2, '0')}';
+
     return ListTile(
       leading: const Text('🐾', style: TextStyle(fontSize: AppSizes.fontXl)),
-      title: Text('${sighting.date} ${sighting.place}'),
+      title: Text('$date ${sighting.areaName}'),
+      subtitle: sighting.description.isEmpty
+          ? null
+          : Text(sighting.description),
       trailing: Chip(
-        label: Text(sighting.isOfficial ? '自治体' : '投稿'),
-        backgroundColor: sighting.isOfficial
+        label: Text(isOfficial ? '自治体' : '投稿'),
+        backgroundColor: isOfficial
             ? AppColors.primaryLight
             : AppColors.warning.withValues(alpha: 0.15),
       ),
