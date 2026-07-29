@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kumayokeru_app/core/config/flavor.dart';
 import 'package:kumayokeru_app/core/constants/app_colors.dart';
-import 'package:kumayokeru_app/presentation/pages/home/home_page.dart';
+import 'package:kumayokeru_app/presentation/pages/root/root_page.dart';
 
 /// アプリのルートWidget。
 class KumaYokeruApp extends ConsumerWidget {
@@ -19,7 +19,7 @@ class KumaYokeruApp extends ConsumerWidget {
         scaffoldBackgroundColor: AppColors.background,
         useMaterial3: true,
       ),
-      home: const HomePage(),
+      home: const RootPage(),
     );
   }
 }
