@@ -12,11 +12,32 @@ class _FakeRemoteDataSource extends SightingsRemoteDataSource {
 
   final List<SightingPostModel>? result;
   final Object? error;
+  SightingPostModel? postedResult;
 
   @override
   Future<List<SightingPostModel>> fetchSightings() async {
     if (error != null) throw error!;
     return result!;
+  }
+
+  @override
+  Future<SightingPostModel> postSighting({
+    required double lat,
+    required double lng,
+    String? description,
+    String? areaName,
+  }) async {
+    if (error != null) throw error!;
+    postedResult = SightingPostModel(
+      id: 'posted-1',
+      lat: lat,
+      lng: lng,
+      sightedAt: DateTime.now(),
+      description: description ?? '',
+      areaName: areaName ?? '',
+      sourceType: SightingSourceType.user,
+    );
+    return postedResult!;
   }
 }
 
@@ -98,6 +119,25 @@ void main() {
         () => repository.fetchSightings(),
         throwsA(isA<SightingsApiException>()),
       );
+    });
+  });
+
+  group('SightingRepositoryImpl.postSighting', () {
+    test('リモートに投稿しentityへ変換して返す', () async {
+      final remote = _FakeRemoteDataSource();
+      final repository = SightingRepositoryImpl(remoteDataSource: remote);
+
+      final result = await repository.postSighting(
+        lat: 35.0,
+        lng: 139.0,
+        description: '林道脇で単独個体を目撃',
+      );
+
+      expect(remote.postedResult, isNotNull);
+      expect(result.lat, 35.0);
+      expect(result.lng, 139.0);
+      expect(result.description, '林道脇で単独個体を目撃');
+      expect(result.sourceType, SightingSourceType.user);
     });
   });
 }

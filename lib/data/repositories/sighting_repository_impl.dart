@@ -37,4 +37,20 @@ class SightingRepositoryImpl implements SightingRepository {
       return cached.map((model) => model.toEntity()).toList();
     }
   }
+
+  @override
+  Future<SightingPost> postSighting({
+    required double lat,
+    required double lng,
+    String? description,
+    String? areaName,
+  }) async {
+    final model = await _remoteDataSource.postSighting(
+      lat: lat,
+      lng: lng,
+      description: description,
+      areaName: areaName,
+    );
+    return model.toEntity();
+  }
 }

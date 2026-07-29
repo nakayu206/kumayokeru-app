@@ -43,4 +43,42 @@ class SightingsRemoteDataSource {
         .map((e) => SightingPostModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  /// 目撃情報を投稿する。認証不要(誰でも投稿可能。sourceTypeは常に"user"として記録される)。
+  Future<SightingPostModel> postSighting({
+    required double lat,
+    required double lng,
+    String? description,
+    String? areaName,
+  }) async {
+    final http.Response response;
+    try {
+      response = await _client.post(
+        _baseUrl.replace(path: '/sightings'),
+        headers: {'content-type': 'application/json'},
+        body: jsonEncode({
+          'lat': lat,
+          'lng': lng,
+          // isar_generatorが内部で使う古いanalyzerがnull-aware map entry構文(`'key': ?value`)を
+          // 解析できずCIのコード生成が失敗するため、あえてif文で書く。
+          // ignore: use_null_aware_elements
+          if (description != null) 'description': description,
+          // ignore: use_null_aware_elements
+          if (areaName != null) 'areaName': areaName,
+        }),
+      );
+    } on Exception catch (e) {
+      throw SightingsApiException('目撃情報の投稿に失敗しました(通信エラー: $e)');
+    }
+
+    if (response.statusCode != 201) {
+      throw SightingsApiException(
+        '目撃情報の投稿に失敗しました(status: ${response.statusCode})',
+      );
+    }
+
+    final body =
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    return SightingPostModel.fromJson(body);
+  }
 }

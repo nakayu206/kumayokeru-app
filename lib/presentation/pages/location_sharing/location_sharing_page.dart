@@ -99,11 +99,20 @@ class _AuthenticatedLocationSharingViewState
       appBar: AppBar(title: const Text('位置情報共有')),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
-        child: state.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : state.group == null
-            ? _buildCreateGroupView(notifier)
-            : _buildGroupView(context, state, notifier),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _PoorSignalNotice(),
+            const SizedBox(height: AppSpacing.md),
+            Expanded(
+              child: state.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : state.group == null
+                  ? _buildCreateGroupView(notifier)
+                  : _buildGroupView(context, state, notifier),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -223,26 +232,6 @@ class _AuthenticatedLocationSharingViewState
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        Row(
-          children: [
-            Icon(
-              Icons.info_outline,
-              size: AppSizes.iconSm,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(width: AppSpacing.xs),
-            Expanded(
-              child: Text(
-                '電波のない場所では更新されません',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: AppSizes.fontSm,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
         SizedBox(
           width: double.infinity,
           height: AppSizes.buttonHeight,
@@ -318,6 +307,44 @@ class _AuthenticatedLocationSharingViewState
     } on Exception catch (e) {
       if (mounted) showErrorDialog(context, '現在地の取得に失敗しました: $e');
     }
+  }
+}
+
+/// 山では電波が届きにくく、この機能が期待通りに動かないことがある旨の注意書き。
+class _PoorSignalNotice extends StatelessWidget {
+  const _PoorSignalNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        border: Border.all(color: AppColors.warning),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.info_outline,
+            color: AppColors.warning,
+            size: AppSizes.iconSm,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              '山では電波状況が悪いため、位置情報の共有が遅れたり反映されないことがあります',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: AppSizes.fontSm,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

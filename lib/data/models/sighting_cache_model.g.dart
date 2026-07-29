@@ -28,8 +28,16 @@ const SightingCacheModelSchema = CollectionSchema(
       name: r'description',
       type: IsarType.string,
     ),
-    r'lat': PropertySchema(id: 2, name: r'lat', type: IsarType.double),
-    r'lng': PropertySchema(id: 3, name: r'lng', type: IsarType.double),
+    r'lat': PropertySchema(
+      id: 2,
+      name: r'lat',
+      type: IsarType.double,
+    ),
+    r'lng': PropertySchema(
+      id: 3,
+      name: r'lng',
+      type: IsarType.double,
+    ),
     r'sightedAt': PropertySchema(
       id: 4,
       name: r'sightedAt',
@@ -45,7 +53,7 @@ const SightingCacheModelSchema = CollectionSchema(
       name: r'sourceType',
       type: IsarType.byte,
       enumMap: _SightingCacheModelsourceTypeEnumValueMap,
-    ),
+    )
   },
   estimateSize: _sightingCacheModelEstimateSize,
   serialize: _sightingCacheModelSerialize,
@@ -102,10 +110,8 @@ SightingCacheModel _sightingCacheModelDeserialize(
   object.lng = reader.readDouble(offsets[3]);
   object.sightedAt = reader.readDateTime(offsets[4]);
   object.sightingId = reader.readString(offsets[5]);
-  object.sourceType =
-      _SightingCacheModelsourceTypeValueEnumMap[reader.readByteOrNull(
-        offsets[6],
-      )] ??
+  object.sourceType = _SightingCacheModelsourceTypeValueEnumMap[
+          reader.readByteOrNull(offsets[6])] ??
       SightingSourceType.official;
   return object;
 }
@@ -130,17 +136,18 @@ P _sightingCacheModelDeserializeProp<P>(
     case 5:
       return (reader.readString(offset)) as P;
     case 6:
-      return (_SightingCacheModelsourceTypeValueEnumMap[reader.readByteOrNull(
-                offset,
-              )] ??
-              SightingSourceType.official)
-          as P;
+      return (_SightingCacheModelsourceTypeValueEnumMap[
+              reader.readByteOrNull(offset)] ??
+          SightingSourceType.official) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
 
-const _SightingCacheModelsourceTypeEnumValueMap = {'official': 0, 'user': 1};
+const _SightingCacheModelsourceTypeEnumValueMap = {
+  'official': 0,
+  'user': 1,
+};
 const _SightingCacheModelsourceTypeValueEnumMap = {
   0: SightingSourceType.official,
   1: SightingSourceType.user,
@@ -151,16 +158,12 @@ Id _sightingCacheModelGetId(SightingCacheModel object) {
 }
 
 List<IsarLinkBase<dynamic>> _sightingCacheModelGetLinks(
-  SightingCacheModel object,
-) {
+    SightingCacheModel object) {
   return [];
 }
 
 void _sightingCacheModelAttach(
-  IsarCollection<dynamic> col,
-  Id id,
-  SightingCacheModel object,
-) {
+    IsarCollection<dynamic> col, Id id, SightingCacheModel object) {
   object.id = id;
 }
 
@@ -176,14 +179,17 @@ extension SightingCacheModelQueryWhereSort
 extension SightingCacheModelQueryWhere
     on QueryBuilder<SightingCacheModel, SightingCacheModel, QWhereClause> {
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterWhereClause>
-  idEqualTo(Id id) {
+      idEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(lower: id, upper: id));
+      return query.addWhereClause(IdWhereClause.between(
+        lower: id,
+        upper: id,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterWhereClause>
-  idNotEqualTo(Id id) {
+      idNotEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -206,7 +212,7 @@ extension SightingCacheModelQueryWhere
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterWhereClause>
-  idGreaterThan(Id id, {bool include = false}) {
+      idGreaterThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.greaterThan(lower: id, includeLower: include),
@@ -215,7 +221,7 @@ extension SightingCacheModelQueryWhere
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterWhereClause>
-  idLessThan(Id id, {bool include = false}) {
+      idLessThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.lessThan(upper: id, includeUpper: include),
@@ -224,21 +230,19 @@ extension SightingCacheModelQueryWhere
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterWhereClause>
-  idBetween(
+      idBetween(
     Id lowerId,
     Id upperId, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IdWhereClause.between(
-          lower: lowerId,
-          includeLower: includeLower,
-          upper: upperId,
-          includeUpper: includeUpper,
-        ),
-      );
+      return query.addWhereClause(IdWhereClause.between(
+        lower: lowerId,
+        includeLower: includeLower,
+        upper: upperId,
+        includeUpper: includeUpper,
+      ));
     });
   }
 }
@@ -246,56 +250,53 @@ extension SightingCacheModelQueryWhere
 extension SightingCacheModelQueryFilter
     on QueryBuilder<SightingCacheModel, SightingCacheModel, QFilterCondition> {
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  areaNameEqualTo(String value, {bool caseSensitive = true}) {
+      areaNameEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'areaName',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'areaName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  areaNameGreaterThan(
+      areaNameGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'areaName',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'areaName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  areaNameLessThan(
+      areaNameLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'areaName',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'areaName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  areaNameBetween(
+      areaNameBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -303,140 +304,135 @@ extension SightingCacheModelQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'areaName',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'areaName',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  areaNameStartsWith(String value, {bool caseSensitive = true}) {
+      areaNameStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'areaName',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'areaName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  areaNameEndsWith(String value, {bool caseSensitive = true}) {
+      areaNameEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'areaName',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'areaName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  areaNameContains(String value, {bool caseSensitive = true}) {
+      areaNameContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'areaName',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'areaName',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  areaNameMatches(String pattern, {bool caseSensitive = true}) {
+      areaNameMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'areaName',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'areaName',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  areaNameIsEmpty() {
+      areaNameIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'areaName', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'areaName',
+        value: '',
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  areaNameIsNotEmpty() {
+      areaNameIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'areaName', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'areaName',
+        value: '',
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  descriptionEqualTo(String value, {bool caseSensitive = true}) {
+      descriptionEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'description',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'description',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  descriptionGreaterThan(
+      descriptionGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'description',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'description',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  descriptionLessThan(
+      descriptionLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'description',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'description',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  descriptionBetween(
+      descriptionBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -444,195 +440,191 @@ extension SightingCacheModelQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'description',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'description',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  descriptionStartsWith(String value, {bool caseSensitive = true}) {
+      descriptionStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'description',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'description',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  descriptionEndsWith(String value, {bool caseSensitive = true}) {
+      descriptionEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'description',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'description',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  descriptionContains(String value, {bool caseSensitive = true}) {
+      descriptionContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'description',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'description',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  descriptionMatches(String pattern, {bool caseSensitive = true}) {
+      descriptionMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'description',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'description',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  descriptionIsEmpty() {
+      descriptionIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'description', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'description',
+        value: '',
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  descriptionIsNotEmpty() {
+      descriptionIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'description', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'description',
+        value: '',
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  idEqualTo(Id value) {
+      idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'id', value: value),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'id',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  idGreaterThan(Id value, {bool include = false}) {
+      idGreaterThan(
+    Id value, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'id',
-          value: value,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  idLessThan(Id value, {bool include = false}) {
+      idLessThan(
+    Id value, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'id',
-          value: value,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  idBetween(
+      idBetween(
     Id lower,
     Id upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'id',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'id',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  latEqualTo(double value, {double epsilon = Query.epsilon}) {
+      latEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'lat',
-          value: value,
-          epsilon: epsilon,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lat',
+        value: value,
+        epsilon: epsilon,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  latGreaterThan(
+      latGreaterThan(
     double value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'lat',
-          value: value,
-          epsilon: epsilon,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lat',
+        value: value,
+        epsilon: epsilon,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  latLessThan(
+      latLessThan(
     double value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'lat',
-          value: value,
-          epsilon: epsilon,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lat',
+        value: value,
+        epsilon: epsilon,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  latBetween(
+      latBetween(
     double lower,
     double upper, {
     bool includeLower = true,
@@ -640,70 +632,65 @@ extension SightingCacheModelQueryFilter
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'lat',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          epsilon: epsilon,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lat',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  lngEqualTo(double value, {double epsilon = Query.epsilon}) {
+      lngEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'lng',
-          value: value,
-          epsilon: epsilon,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lng',
+        value: value,
+        epsilon: epsilon,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  lngGreaterThan(
+      lngGreaterThan(
     double value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'lng',
-          value: value,
-          epsilon: epsilon,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lng',
+        value: value,
+        epsilon: epsilon,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  lngLessThan(
+      lngLessThan(
     double value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'lng',
-          value: value,
-          epsilon: epsilon,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lng',
+        value: value,
+        epsilon: epsilon,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  lngBetween(
+      lngBetween(
     double lower,
     double upper, {
     bool includeLower = true,
@@ -711,125 +698,121 @@ extension SightingCacheModelQueryFilter
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'lng',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          epsilon: epsilon,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lng',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sightedAtEqualTo(DateTime value) {
+      sightedAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'sightedAt', value: value),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sightedAt',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sightedAtGreaterThan(DateTime value, {bool include = false}) {
+      sightedAtGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'sightedAt',
-          value: value,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sightedAt',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sightedAtLessThan(DateTime value, {bool include = false}) {
+      sightedAtLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'sightedAt',
-          value: value,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sightedAt',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sightedAtBetween(
+      sightedAtBetween(
     DateTime lower,
     DateTime upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'sightedAt',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sightedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sightingIdEqualTo(String value, {bool caseSensitive = true}) {
+      sightingIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'sightingId',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sightingId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sightingIdGreaterThan(
+      sightingIdGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'sightingId',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sightingId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sightingIdLessThan(
+      sightingIdLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'sightingId',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sightingId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sightingIdBetween(
+      sightingIdBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -837,141 +820,140 @@ extension SightingCacheModelQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'sightingId',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sightingId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sightingIdStartsWith(String value, {bool caseSensitive = true}) {
+      sightingIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'sightingId',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'sightingId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sightingIdEndsWith(String value, {bool caseSensitive = true}) {
+      sightingIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'sightingId',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'sightingId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sightingIdContains(String value, {bool caseSensitive = true}) {
+      sightingIdContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'sightingId',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'sightingId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sightingIdMatches(String pattern, {bool caseSensitive = true}) {
+      sightingIdMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'sightingId',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'sightingId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sightingIdIsEmpty() {
+      sightingIdIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'sightingId', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sightingId',
+        value: '',
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sightingIdIsNotEmpty() {
+      sightingIdIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'sightingId', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'sightingId',
+        value: '',
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sourceTypeEqualTo(SightingSourceType value) {
+      sourceTypeEqualTo(SightingSourceType value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'sourceType', value: value),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'sourceType',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sourceTypeGreaterThan(SightingSourceType value, {bool include = false}) {
+      sourceTypeGreaterThan(
+    SightingSourceType value, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'sourceType',
-          value: value,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'sourceType',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sourceTypeLessThan(SightingSourceType value, {bool include = false}) {
+      sourceTypeLessThan(
+    SightingSourceType value, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'sourceType',
-          value: value,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'sourceType',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterFilterCondition>
-  sourceTypeBetween(
+      sourceTypeBetween(
     SightingSourceType lower,
     SightingSourceType upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'sourceType',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'sourceType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
     });
   }
 }
@@ -985,98 +967,98 @@ extension SightingCacheModelQueryLinks
 extension SightingCacheModelQuerySortBy
     on QueryBuilder<SightingCacheModel, SightingCacheModel, QSortBy> {
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  sortByAreaName() {
+      sortByAreaName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'areaName', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  sortByAreaNameDesc() {
+      sortByAreaNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'areaName', Sort.desc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  sortByDescription() {
+      sortByDescription() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'description', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  sortByDescriptionDesc() {
+      sortByDescriptionDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'description', Sort.desc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  sortByLat() {
+      sortByLat() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lat', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  sortByLatDesc() {
+      sortByLatDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lat', Sort.desc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  sortByLng() {
+      sortByLng() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lng', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  sortByLngDesc() {
+      sortByLngDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lng', Sort.desc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  sortBySightedAt() {
+      sortBySightedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sightedAt', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  sortBySightedAtDesc() {
+      sortBySightedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sightedAt', Sort.desc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  sortBySightingId() {
+      sortBySightingId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sightingId', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  sortBySightingIdDesc() {
+      sortBySightingIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sightingId', Sort.desc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  sortBySourceType() {
+      sortBySourceType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sourceType', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  sortBySourceTypeDesc() {
+      sortBySourceTypeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sourceType', Sort.desc);
     });
@@ -1086,112 +1068,112 @@ extension SightingCacheModelQuerySortBy
 extension SightingCacheModelQuerySortThenBy
     on QueryBuilder<SightingCacheModel, SightingCacheModel, QSortThenBy> {
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenByAreaName() {
+      thenByAreaName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'areaName', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenByAreaNameDesc() {
+      thenByAreaNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'areaName', Sort.desc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenByDescription() {
+      thenByDescription() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'description', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenByDescriptionDesc() {
+      thenByDescriptionDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'description', Sort.desc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenById() {
+      thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenByIdDesc() {
+      thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenByLat() {
+      thenByLat() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lat', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenByLatDesc() {
+      thenByLatDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lat', Sort.desc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenByLng() {
+      thenByLng() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lng', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenByLngDesc() {
+      thenByLngDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lng', Sort.desc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenBySightedAt() {
+      thenBySightedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sightedAt', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenBySightedAtDesc() {
+      thenBySightedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sightedAt', Sort.desc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenBySightingId() {
+      thenBySightingId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sightingId', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenBySightingIdDesc() {
+      thenBySightingIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sightingId', Sort.desc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenBySourceType() {
+      thenBySourceType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sourceType', Sort.asc);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QAfterSortBy>
-  thenBySourceTypeDesc() {
+      thenBySourceTypeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sourceType', Sort.desc);
     });
@@ -1201,49 +1183,49 @@ extension SightingCacheModelQuerySortThenBy
 extension SightingCacheModelQueryWhereDistinct
     on QueryBuilder<SightingCacheModel, SightingCacheModel, QDistinct> {
   QueryBuilder<SightingCacheModel, SightingCacheModel, QDistinct>
-  distinctByAreaName({bool caseSensitive = true}) {
+      distinctByAreaName({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'areaName', caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QDistinct>
-  distinctByDescription({bool caseSensitive = true}) {
+      distinctByDescription({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'description', caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QDistinct>
-  distinctByLat() {
+      distinctByLat() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lat');
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QDistinct>
-  distinctByLng() {
+      distinctByLng() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lng');
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QDistinct>
-  distinctBySightedAt() {
+      distinctBySightedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'sightedAt');
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QDistinct>
-  distinctBySightingId({bool caseSensitive = true}) {
+      distinctBySightingId({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'sightingId', caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingCacheModel, QDistinct>
-  distinctBySourceType() {
+      distinctBySourceType() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'sourceType');
     });
@@ -1259,14 +1241,14 @@ extension SightingCacheModelQueryProperty
   }
 
   QueryBuilder<SightingCacheModel, String, QQueryOperations>
-  areaNameProperty() {
+      areaNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'areaName');
     });
   }
 
   QueryBuilder<SightingCacheModel, String, QQueryOperations>
-  descriptionProperty() {
+      descriptionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'description');
     });
@@ -1285,21 +1267,21 @@ extension SightingCacheModelQueryProperty
   }
 
   QueryBuilder<SightingCacheModel, DateTime, QQueryOperations>
-  sightedAtProperty() {
+      sightedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'sightedAt');
     });
   }
 
   QueryBuilder<SightingCacheModel, String, QQueryOperations>
-  sightingIdProperty() {
+      sightingIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'sightingId');
     });
   }
 
   QueryBuilder<SightingCacheModel, SightingSourceType, QQueryOperations>
-  sourceTypeProperty() {
+      sourceTypeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'sourceType');
     });
