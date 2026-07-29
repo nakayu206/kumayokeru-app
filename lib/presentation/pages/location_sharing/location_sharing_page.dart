@@ -1,105 +1,348 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 
 import 'package:kumayokeru_app/core/constants/app_colors.dart';
 import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
-
-class _DummyMember {
-  const _DummyMember({required this.name, required this.lastUpdated});
-
-  final String name;
-  final String lastUpdated;
-}
-
-const _dummyMembers = [
-  _DummyMember(name: '田中さん', lastUpdated: '3分前'),
-  _DummyMember(name: '家族グループ', lastUpdated: '1分前'),
-];
+import 'package:kumayokeru_app/domain/entities/member_location.dart';
+import 'package:kumayokeru_app/presentation/pages/auth/login_page.dart';
+import 'package:kumayokeru_app/presentation/providers/auth_providers.dart';
+import 'package:kumayokeru_app/presentation/providers/location_sharing_providers.dart';
+import 'package:kumayokeru_app/presentation/widgets/common/error_dialog.dart';
 
 /// 仲間・家族への位置情報共有画面(仕様書セクション12 ③)。
 ///
-/// TODO(#12): 共有メンバー一覧・SOSを実データ(Firestore同期)と結合する。
-class LocationSharingPage extends StatelessWidget {
+/// kumayokeru-backend(POST /locations + ポーリング取得、#12)と結合済み。
+class LocationSharingPage extends ConsumerWidget {
   const LocationSharingPage({super.key});
 
   @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+
+    if (!authState.isAuthenticated) {
+      return _buildLoginPrompt(context);
+    }
+
+    return _AuthenticatedLocationSharingView();
+  }
+
+  Widget _buildLoginPrompt(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('位置情報共有')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.lock_outline,
+                size: AppSizes.iconLg,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                '仲間との位置情報共有にはログインが必要です',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              ElevatedButton(
+                onPressed: () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const LoginPage())),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('ログイン / 新規登録'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthenticatedLocationSharingView extends ConsumerStatefulWidget {
+  @override
+  ConsumerState<_AuthenticatedLocationSharingView> createState() =>
+      _AuthenticatedLocationSharingViewState();
+}
+
+class _AuthenticatedLocationSharingViewState
+    extends ConsumerState<_AuthenticatedLocationSharingView> {
+  final _groupNameController = TextEditingController();
+
+  @override
+  void dispose() {
+    _groupNameController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final state = ref.watch(locationSharingProvider);
+    final notifier = ref.read(locationSharingProvider.notifier);
+
+    ref.listen<LocationSharingState>(locationSharingProvider, (previous, next) {
+      if (next.errorMessage != null &&
+          next.errorMessage != previous?.errorMessage) {
+        showErrorDialog(context, next.errorMessage!);
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(title: const Text('位置情報共有')),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: state.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : state.group == null
+            ? _buildCreateGroupView(notifier)
+            : _buildGroupView(context, state, notifier),
+      ),
+    );
+  }
+
+  Widget _buildCreateGroupView(LocationSharingNotifier notifier) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'まだ共有グループがありません',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: AppSizes.fontMd,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'グループを作成すると、仲間・家族と位置情報を共有できます',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        TextField(
+          controller: _groupNameController,
+          decoration: const InputDecoration(
+            labelText: 'グループ名',
+            hintText: '例: 家族グループ',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          width: double.infinity,
+          height: AppSizes.buttonHeight,
+          child: ElevatedButton(
+            onPressed: () {
+              final name = _groupNameController.text.trim();
+              if (name.isEmpty) return;
+              notifier.createGroup(name);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              ),
+            ),
+            child: const Text('グループを作成'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGroupView(
+    BuildContext context,
+    LocationSharingState state,
+    LocationSharingNotifier notifier,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '共有中のメンバー',
+              state.group!.name,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: AppSizes.fontMd,
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            for (final member in _dummyMembers)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.person, color: AppColors.primary),
-                  title: Text(member.name),
-                  subtitle: Text('最終更新 ${member.lastUpdated}'),
-                ),
-              ),
-            const SizedBox(height: AppSpacing.md),
-            OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.person_add_alt),
-              label: const Text('共有相手を追加'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
-                foregroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                ),
-              ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: notifier.refreshLocations,
             ),
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  size: AppSizes.iconSm,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                Expanded(
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Expanded(
+          child: state.memberLocations.isEmpty
+              ? Center(
                   child: Text(
-                    '電波のない場所では更新されません',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: AppSizes.fontSm,
-                    ),
+                    'まだ共有された位置情報がありません',
+                    style: TextStyle(color: AppColors.textSecondary),
                   ),
+                )
+              : ListView(
+                  children: [
+                    for (final location in state.memberLocations)
+                      _MemberLocationTile(location: location),
+                  ],
                 ),
-              ],
+        ),
+        OutlinedButton.icon(
+          onPressed: () => _showInviteDialog(context, notifier),
+          icon: const Icon(Icons.person_add_alt),
+          label: const Text('共有相手を追加'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+            foregroundColor: AppColors.primary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
             ),
-            const Spacer(),
-            SizedBox(
-              width: double.infinity,
-              height: AppSizes.buttonHeight,
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.sos),
-                label: const Text('緊急連絡'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.danger,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        OutlinedButton.icon(
+          onPressed: () => _shareCurrentLocation(notifier),
+          icon: const Icon(Icons.my_location),
+          label: const Text('現在地を共有する'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+            foregroundColor: AppColors.primary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            Icon(
+              Icons.info_outline,
+              size: AppSizes.iconSm,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: Text(
+                '電波のない場所では更新されません',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: AppSizes.fontSm,
                 ),
               ),
             ),
           ],
         ),
+        const SizedBox(height: AppSpacing.md),
+        SizedBox(
+          width: double.infinity,
+          height: AppSizes.buttonHeight,
+          child: ElevatedButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.sos),
+            label: const Text('緊急連絡'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.danger,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _showInviteDialog(
+    BuildContext context,
+    LocationSharingNotifier notifier,
+  ) async {
+    final emailController = TextEditingController();
+    final email = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('共有相手を追加'),
+        content: TextField(
+          controller: emailController,
+          keyboardType: TextInputType.emailAddress,
+          decoration: const InputDecoration(labelText: 'メールアドレス'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.of(context).pop(emailController.text.trim()),
+            child: const Text('追加'),
+          ),
+        ],
       ),
     );
+
+    if (email != null && email.isNotEmpty) {
+      await notifier.inviteMember(email);
+    }
+  }
+
+  Future<void> _shareCurrentLocation(LocationSharingNotifier notifier) async {
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          showErrorDialog(context, '位置情報の権限が許可されていません');
+        }
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition();
+      await notifier.shareCurrentLocation(
+        position.latitude,
+        position.longitude,
+      );
+    } on Exception catch (e) {
+      if (mounted) showErrorDialog(context, '現在地の取得に失敗しました: $e');
+    }
+  }
+}
+
+class _MemberLocationTile extends StatelessWidget {
+  const _MemberLocationTile({required this.location});
+
+  final MemberLocation location;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.person, color: AppColors.primary),
+        title: Text(location.email),
+        subtitle: Text('最終更新 ${_formatTime(location.recordedAt)}'),
+      ),
+    );
+  }
+
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final diff = now.difference(time);
+    if (diff.inMinutes < 1) return 'たった今';
+    if (diff.inHours < 1) return '${diff.inMinutes}分前';
+    if (diff.inDays < 1) return '${diff.inHours}時間前';
+    return '${diff.inDays}日前';
   }
 }
