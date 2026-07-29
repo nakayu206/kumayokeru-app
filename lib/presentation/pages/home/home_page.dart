@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kumayokeru_app/core/constants/app_colors.dart';
 import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
+import 'package:kumayokeru_app/domain/entities/hiking_session.dart';
+import 'package:kumayokeru_app/presentation/providers/hiking_session_providers.dart';
 import 'package:kumayokeru_app/presentation/providers/presence_notification_providers.dart';
 
 /// ホーム画面(仕様書セクション12 ①)。
@@ -18,6 +20,7 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final notificationState = ref.watch(presenceNotificationProvider);
     final notifier = ref.read(presenceNotificationProvider.notifier);
+    final hikingSession = ref.watch(hikingSessionProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -52,6 +55,8 @@ class HomePage extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.lg),
               const _SightingAlertBanner(),
+              const SizedBox(height: AppSpacing.lg),
+              _HikingSummaryCard(session: hikingSession),
             ],
           ),
         ),
@@ -138,7 +143,7 @@ class _NotificationCard extends StatelessWidget {
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             ],
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.sm),
             SizedBox(
               width: double.infinity,
               height: AppSizes.buttonHeight,
@@ -157,6 +162,100 @@ class _NotificationCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _HikingSummaryCard extends StatelessWidget {
+  const _HikingSummaryCard({required this.session});
+
+  final HikingSession session;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.surface,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '登山情報',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: AppSizes.fontMd,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _SummaryStat(
+                  icon: Icons.timer_outlined,
+                  label: '経過時間',
+                  value: _formatElapsed(session.elapsedSeconds),
+                ),
+                _SummaryStat(
+                  icon: Icons.route_outlined,
+                  label: '歩いた距離',
+                  value:
+                      '${(session.distanceMeters / 1000).toStringAsFixed(1)}km',
+                ),
+                _SummaryStat(
+                  icon: Icons.terrain_outlined,
+                  label: '高度',
+                  value: session.altitudeMeters == null
+                      ? '--m'
+                      : '${session.altitudeMeters!.round()}m',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatElapsed(int totalSeconds) {
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    return '$hours時間${minutes.toString().padLeft(2, '0')}分';
+  }
+}
+
+class _SummaryStat extends StatelessWidget {
+  const _SummaryStat({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: AppColors.primary, size: AppSizes.iconMd),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: AppSizes.fontLg,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: AppSizes.fontXs,
+          ),
+        ),
+      ],
     );
   }
 }
