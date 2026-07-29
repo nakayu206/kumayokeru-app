@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:kumayokeru_app/core/constants/app_colors.dart';
@@ -9,13 +10,14 @@ import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 import 'package:kumayokeru_app/core/constants/map_constants.dart';
 import 'package:kumayokeru_app/domain/entities/sighting.dart';
 import 'package:kumayokeru_app/presentation/providers/sighting_providers.dart';
+import 'package:kumayokeru_app/presentation/widgets/common/error_dialog.dart';
 import 'package:kumayokeru_app/presentation/widgets/common/error_text.dart';
 
 /// 出没情報マップ画面(仕様書セクション12 ②)。
 ///
 /// kumayokeru-backend(https://57-182-248-130.sslip.io)の`GET /sightings`から取得した実データを表示する。
+/// 目撃情報の投稿(`POST /sightings`)は認証不要で誰でも可能。
 /// TODO(#11): Isarへのキャッシュ(オフライン閲覧用)、距離絞り込みと結合する。
-/// TODO(#12): 「目撃情報を投稿する」ボタンから`POST /sightings`への投稿を実装する。
 class SightingMapPage extends ConsumerWidget {
   const SightingMapPage({super.key});
 
@@ -78,7 +80,7 @@ class SightingMapPage extends ConsumerWidget {
               width: double.infinity,
               height: AppSizes.buttonHeight,
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () => _showPostSightingDialog(context, ref),
                 icon: const Icon(Icons.add_location_alt_outlined),
                 label: const Text('目撃情報を投稿する'),
                 style: ElevatedButton.styleFrom(
@@ -127,6 +129,114 @@ class SightingMapPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _showPostSightingDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final descriptionController = TextEditingController();
+    var isSubmitting = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: const Text('目撃情報を投稿する'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: descriptionController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: '目撃状況(任意)',
+                      hintText: '例: 林道脇で単独個体を目撃',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    '現在地を目撃場所として送信します',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: AppSizes.fontSm,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(),
+                  child: const Text('キャンセル'),
+                ),
+                FilledButton(
+                  onPressed: isSubmitting
+                      ? null
+                      : () async {
+                          setDialogState(() => isSubmitting = true);
+                          final error = await _submitSighting(
+                            ref,
+                            description: descriptionController.text.trim(),
+                          );
+                          if (!dialogContext.mounted) return;
+                          Navigator.of(dialogContext).pop();
+                          if (!context.mounted) return;
+                          if (error != null) {
+                            await showErrorDialog(context, error);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('目撃情報を投稿しました')),
+                            );
+                          }
+                        },
+                  child: isSubmitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('投稿する'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<String?> _submitSighting(
+    WidgetRef ref, {
+    required String description,
+  }) async {
+    try {
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return '位置情報の権限が許可されていません';
+      }
+
+      final position = await Geolocator.getCurrentPosition();
+      await ref
+          .read(sightingRepositoryProvider)
+          .postSighting(
+            lat: position.latitude,
+            lng: position.longitude,
+            description: description.isEmpty ? null : description,
+          );
+      ref.invalidate(sightingsProvider);
+      return null;
+    } on Exception catch (e) {
+      return '投稿に失敗しました: $e';
+    }
   }
 }
 
