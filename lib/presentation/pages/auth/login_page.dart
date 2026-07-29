@@ -57,7 +57,13 @@ class _LoginPageState extends State<LoginPage> {
       title: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('クマヨケール', style: TextStyle(fontSize: AppSizes.fontLg, fontWeight: FontWeight.bold)),
+          Text(
+            'クマヨケール',
+            style: TextStyle(
+              fontSize: AppSizes.fontLg,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           Text('登山のお守り', style: TextStyle(fontSize: AppSizes.fontXs)),
         ],
       ),
@@ -66,13 +72,20 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildFormView() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x3l, vertical: AppSpacing.x4l),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.x3l,
+        vertical: AppSpacing.x4l,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
             _isRegisterMode ? '新規登録' : 'ログイン',
-            style: TextStyle(fontSize: AppSizes.fontX2l, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            style: TextStyle(
+              fontSize: AppSizes.fontX2l,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
@@ -116,11 +129,16 @@ class _LoginPageState extends State<LoginPage> {
               border: const OutlineInputBorder(),
               prefixIcon: const Icon(Icons.lock_outline),
               suffixIcon: IconButton(
-                icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                ),
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
               ),
             ),
-            textInputAction: _isRegisterMode ? TextInputAction.next : TextInputAction.done,
+            textInputAction: _isRegisterMode
+                ? TextInputAction.next
+                : TextInputAction.done,
             onSubmitted: _isRegisterMode ? null : (_) => _submit(),
           ),
           if (_isRegisterMode) ...[
@@ -133,8 +151,14 @@ class _LoginPageState extends State<LoginPage> {
                 border: const OutlineInputBorder(),
                 prefixIcon: const Icon(Icons.lock_outline),
                 suffixIcon: IconButton(
-                  icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility),
-                  onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                  icon: Icon(
+                    _obscureConfirmPassword
+                        ? Icons.visibility_off
+                        : Icons.visibility,
+                  ),
+                  onPressed: () => setState(
+                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                  ),
                 ),
               ),
               textInputAction: TextInputAction.done,
@@ -149,7 +173,9 @@ class _LoginPageState extends State<LoginPage> {
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusLg)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                ),
               ),
               child: Text(_isRegisterMode ? '登録する' : 'ログイン'),
             ),
@@ -165,7 +191,10 @@ class _LoginPageState extends State<LoginPage> {
           if (!_isRegisterMode)
             TextButton(
               onPressed: () {},
-              child: Text('パスワードをお忘れの方', style: TextStyle(color: AppColors.textDisabled)),
+              child: Text(
+                'パスワードをお忘れの方',
+                style: TextStyle(color: AppColors.textDisabled),
+              ),
             ),
         ],
       ),
@@ -174,13 +203,27 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _buildRegisteredView() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x3l, vertical: AppSpacing.x4l),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.x3l,
+        vertical: AppSpacing.x4l,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.mark_email_unread_outlined, size: 64, color: AppColors.primary),
+          const Icon(
+            Icons.mark_email_unread_outlined,
+            size: 64,
+            color: AppColors.primary,
+          ),
           const SizedBox(height: AppSpacing.x3l),
-          Text('確認メールを送信しました', textAlign: TextAlign.center, style: TextStyle(fontSize: AppSizes.fontX2l, fontWeight: FontWeight.bold)),
+          Text(
+            '確認メールを送信しました',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: AppSizes.fontX2l,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             'メール内のリンクをクリックして登録を完了してください',
@@ -189,7 +232,10 @@ class _LoginPageState extends State<LoginPage> {
           ),
           const SizedBox(height: AppSpacing.x2l),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
             decoration: BoxDecoration(
               color: AppColors.warning.withValues(alpha: 0.1),
               border: Border.all(color: AppColors.warning),
@@ -200,7 +246,10 @@ class _LoginPageState extends State<LoginPage> {
                 Icon(Icons.warning_amber_outlined, color: AppColors.warning),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
-                  child: Text('メールが届かない場合は迷惑メールフォルダもご確認ください', style: TextStyle(color: AppColors.warning)),
+                  child: Text(
+                    'メールが届かない場合は迷惑メールフォルダもご確認ください',
+                    style: TextStyle(color: AppColors.warning),
+                  ),
                 ),
               ],
             ),
@@ -216,7 +265,9 @@ class _LoginPageState extends State<LoginPage> {
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusLg)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                ),
               ),
               child: const Text('ログイン画面に戻る'),
             ),
@@ -247,11 +298,15 @@ class _LoginPageState extends State<LoginPage> {
     if (password.length < 6) return _showSnack('パスワードは6文字以上で入力してください');
 
     if (_isRegisterMode) {
-      if (_nameController.text.trim().isEmpty) return _showSnack('表示名を入力してください');
+      if (_nameController.text.trim().isEmpty) {
+        return _showSnack('表示名を入力してください');
+      }
       final hasLetter = password.contains(RegExp(r'[a-zA-Z]'));
       final hasDigit = password.contains(RegExp(r'[0-9]'));
       if (!hasLetter || !hasDigit) return _showSnack('パスワードは英数字を両方含めてください');
-      if (password != _confirmPasswordController.text) return _showSnack('パスワードが一致しません');
+      if (password != _confirmPasswordController.text) {
+        return _showSnack('パスワードが一致しません');
+      }
     }
 
     // TODO(#15): ここでAWS Cognito(amplify_auth_cognito)への実際のサインアップ/サインインを呼び出す。
@@ -262,9 +317,12 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  bool _isValidEmail(String email) => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+  bool _isValidEmail(String email) =>
+      RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }

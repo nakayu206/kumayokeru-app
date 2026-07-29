@@ -8,9 +8,7 @@ void main() {
   testWidgets('ホーム画面がアプリ名を表示する', (WidgetTester tester) async {
     AppConfig.setFlavor(Flavor.dev);
 
-    await tester.pumpWidget(
-      const ProviderScope(child: KumaYokeruApp()),
-    );
+    await tester.pumpWidget(const ProviderScope(child: KumaYokeruApp()));
 
     expect(find.text('登山のお守り'), findsOneWidget);
   });
