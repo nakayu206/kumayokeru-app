@@ -6,6 +6,7 @@ import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 import 'package:kumayokeru_app/domain/entities/notification_settings.dart';
 import 'package:kumayokeru_app/presentation/pages/auth/login_page.dart';
+import 'package:kumayokeru_app/presentation/providers/auth_providers.dart';
 import 'package:kumayokeru_app/presentation/providers/settings_providers.dart';
 
 /// 設定画面(仕様書セクション12 ④)。
@@ -88,14 +89,31 @@ class SettingsPage extends ConsumerWidget {
             activeTrackColor: AppColors.primary,
           ),
           const Divider(height: AppSpacing.x3l),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.account_circle_outlined),
-            title: const Text('アカウント(仲間との共有に必要)'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const LoginPage())),
+          Builder(
+            builder: (context) {
+              final authState = ref.watch(authProvider);
+              if (authState.isAuthenticated) {
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.account_circle),
+                  title: Text(authState.user!.email),
+                  subtitle: const Text('ログイン中'),
+                  trailing: TextButton(
+                    onPressed: () => ref.read(authProvider.notifier).logout(),
+                    child: const Text('ログアウト'),
+                  ),
+                );
+              }
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.account_circle_outlined),
+                title: const Text('アカウント(仲間との共有に必要)'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => const LoginPage())),
+              );
+            },
           ),
           const Divider(height: AppSpacing.x3l),
           ListTile(
