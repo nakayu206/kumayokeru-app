@@ -5,12 +5,18 @@ import 'package:kumayokeru_app/core/constants/app_colors.dart';
 import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 import 'package:kumayokeru_app/presentation/providers/auth_providers.dart';
+import 'package:kumayokeru_app/presentation/widgets/common/error_dialog.dart';
+import 'package:kumayokeru_app/presentation/widgets/common/error_text.dart';
 
 /// ログイン/新規登録画面。
 ///
 /// TekuShareのEmailAuthPageと同じメール+パスワード認証フローを踏襲する。
 /// kumayokeru-backend(JWT + bcrypt、#15)と結合済み。バックエンドはsignup時に
 /// メール確認を行わないため、新規登録に成功したら続けて自動でログインする。
+///
+/// エラー表示の使い分け(アプリ共通の方針):
+/// - 入力バリデーション(未入力・形式不正等): 画面内に赤文字で表示([ErrorText])
+/// - 通信・認証エラー(kumayokeru-backendからのエラー応答等): ダイアログで表示([showErrorDialog])
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
@@ -26,6 +32,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   bool _isRegisterMode = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  String? _validationError;
 
   @override
   void dispose() {
@@ -45,9 +52,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       }
       if (next.errorMessage != null &&
           next.errorMessage != previous?.errorMessage) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
+        showErrorDialog(context, next.errorMessage!);
       }
     });
 
@@ -161,6 +166,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               onSubmitted: (_) => _submit(),
             ),
           ],
+          if (_validationError != null) ErrorText(_validationError!),
           const SizedBox(height: AppSpacing.x3l),
           SizedBox(
             height: AppSizes.buttonHeight,
@@ -201,6 +207,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   void _toggleMode() {
     setState(() {
       _isRegisterMode = !_isRegisterMode;
+      _validationError = null;
       _emailController.clear();
       _passwordController.clear();
       _confirmPasswordController.clear();
@@ -212,17 +219,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    if (email.isEmpty) return _showSnack('メールアドレスを入力してください');
-    if (!_isValidEmail(email)) return _showSnack('メールアドレスの形式が正しくありません');
-    if (password.isEmpty) return _showSnack('パスワードを入力してください');
-    if (password.length < 8) return _showSnack('パスワードは8文字以上で入力してください');
+    if (email.isEmpty) return _setValidationError('メールアドレスを入力してください');
+    if (!_isValidEmail(email)) {
+      return _setValidationError('メールアドレスの形式が正しくありません');
+    }
+    if (password.isEmpty) return _setValidationError('パスワードを入力してください');
+    if (password.length < 8) {
+      return _setValidationError('パスワードは8文字以上で入力してください');
+    }
 
     if (_isRegisterMode) {
       if (password != _confirmPasswordController.text) {
-        return _showSnack('パスワードが一致しません');
+        return _setValidationError('パスワードが一致しません');
       }
+      setState(() => _validationError = null);
       ref.read(authProvider.notifier).signUp(email, password);
     } else {
+      setState(() => _validationError = null);
       ref.read(authProvider.notifier).login(email, password);
     }
   }
@@ -230,9 +243,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   bool _isValidEmail(String email) =>
       RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
 
-  void _showSnack(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _setValidationError(String message) {
+    setState(() => _validationError = message);
   }
 }
