@@ -67,7 +67,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     return AppBar(
       backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
-      automaticallyImplyLeading: false,
       centerTitle: true,
       elevation: 0,
       title: const Column(
