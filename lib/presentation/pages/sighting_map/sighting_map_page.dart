@@ -9,6 +9,7 @@ import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 import 'package:kumayokeru_app/core/constants/map_constants.dart';
 import 'package:kumayokeru_app/domain/entities/sighting.dart';
 import 'package:kumayokeru_app/presentation/providers/sighting_providers.dart';
+import 'package:kumayokeru_app/presentation/widgets/common/error_text.dart';
 
 /// 出没情報マップ画面(仕様書セクション12 ②)。
 ///
@@ -97,10 +98,9 @@ class SightingMapPage extends ConsumerWidget {
               child: sightingsAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => Center(
-                  child: Text(
+                  child: ErrorText(
                     '出没情報の取得に失敗しました\n$error',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ),
                 data: (sightings) => ListView(
