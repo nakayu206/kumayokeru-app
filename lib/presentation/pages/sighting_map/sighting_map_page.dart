@@ -9,7 +9,9 @@ import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 import 'package:kumayokeru_app/core/constants/map_constants.dart';
 import 'package:kumayokeru_app/domain/entities/sighting.dart';
+import 'package:kumayokeru_app/infrastructure/offline_tile_provider.dart';
 import 'package:kumayokeru_app/presentation/providers/current_position_provider.dart';
+import 'package:kumayokeru_app/presentation/providers/offline_map_providers.dart';
 import 'package:kumayokeru_app/presentation/providers/sighting_providers.dart';
 import 'package:kumayokeru_app/presentation/widgets/common/error_dialog.dart';
 import 'package:kumayokeru_app/presentation/widgets/common/error_text.dart';
@@ -73,8 +75,11 @@ class _SightingMapPageState extends ConsumerState<SightingMapPage> {
               ),
               children: [
                 TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate: MapConstants.tileUrlTemplate,
                   userAgentPackageName: 'com.kumayokeru.app',
+                  tileProvider: OfflineFirstTileProvider(
+                    ref.watch(offlineMapServiceProvider),
+                  ),
                 ),
                 MarkerLayer(
                   markers: [

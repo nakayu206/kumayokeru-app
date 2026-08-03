@@ -6,6 +6,7 @@ import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 import 'package:kumayokeru_app/domain/entities/notification_settings.dart';
 import 'package:kumayokeru_app/presentation/pages/auth/login_page.dart';
+import 'package:kumayokeru_app/presentation/pages/settings/map_data_management_page.dart';
 import 'package:kumayokeru_app/presentation/providers/auth_providers.dart';
 import 'package:kumayokeru_app/presentation/providers/settings_providers.dart';
 
@@ -120,7 +121,9 @@ class SettingsPage extends ConsumerWidget {
             contentPadding: EdgeInsets.zero,
             title: const Text('地図データ管理'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const MapDataManagementPage()),
+            ),
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,

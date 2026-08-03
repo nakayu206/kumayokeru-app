@@ -12,6 +12,14 @@ class MapConstants {
   /// 初期表示位置(東京)。実際の登山エリアに応じて変更する。
   static const defaultLat = 35.6895;
   static const defaultLng = 139.6917;
+
+  static const tileUrlTemplate =
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+  /// オフライン地図の事前ダウンロード範囲(現在地からの半径・ズーム範囲)。
+  static const offlineDownloadRadiusKm = 5.0;
+  static const offlineDownloadMinZoom = 12;
+  static const offlineDownloadMaxZoom = 16;
 }
 
 /// 存在通知音の再生に関する定数(仕様書セクション15)。
