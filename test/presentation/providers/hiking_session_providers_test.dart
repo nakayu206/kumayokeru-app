@@ -39,6 +39,9 @@ class _FakeLocationService implements LocationService {
 
   @override
   Stream<Position> positionStream() => _controller.stream;
+
+  @override
+  Future<Position> getCurrentPosition() => positionStream().first;
 }
 
 void main() {

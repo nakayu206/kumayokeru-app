@@ -6,6 +6,9 @@ abstract interface class LocationService {
   Future<bool> ensurePermission();
 
   Stream<Position> positionStream();
+
+  /// 現在地を1回だけ取得する。
+  Future<Position> getCurrentPosition();
 }
 
 class GeolocatorLocationService implements LocationService {
@@ -28,5 +31,10 @@ class GeolocatorLocationService implements LocationService {
         distanceFilter: 5,
       ),
     );
+  }
+
+  @override
+  Future<Position> getCurrentPosition() {
+    return Geolocator.getCurrentPosition();
   }
 }

@@ -9,6 +9,7 @@ import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 import 'package:kumayokeru_app/core/constants/map_constants.dart';
 import 'package:kumayokeru_app/domain/entities/sighting.dart';
+import 'package:kumayokeru_app/presentation/providers/current_position_provider.dart';
 import 'package:kumayokeru_app/presentation/providers/sighting_providers.dart';
 import 'package:kumayokeru_app/presentation/widgets/common/error_dialog.dart';
 import 'package:kumayokeru_app/presentation/widgets/common/error_text.dart';
@@ -17,13 +18,46 @@ import 'package:kumayokeru_app/presentation/widgets/common/error_text.dart';
 ///
 /// kumayokeru-backend(https://57-182-248-130.sslip.io)の`GET /sightings`から取得した実データを表示する。
 /// 目撃情報の投稿(`POST /sightings`)は認証不要で誰でも可能。
+/// 現在地はgeolocatorで取得でき次第、地図の中心とマーカーに反映する
+/// (取得できるまで/失敗時はデフォルト座標を表示)。
 /// TODO(#11): Isarへのキャッシュ(オフライン閲覧用)、距離絞り込みと結合する。
-class SightingMapPage extends ConsumerWidget {
+class SightingMapPage extends ConsumerStatefulWidget {
   const SightingMapPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SightingMapPage> createState() => _SightingMapPageState();
+}
+
+class _SightingMapPageState extends ConsumerState<SightingMapPage> {
+  final _mapController = MapController();
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final sightingsAsync = ref.watch(sightingsProvider);
+    final currentPositionAsync = ref.watch(currentPositionProvider);
+
+    ref.listen(currentPositionProvider, (previous, next) {
+      final position = next.valueOrNull;
+      if (position != null) {
+        _mapController.move(
+          LatLng(position.latitude, position.longitude),
+          MapConstants.defaultZoom,
+        );
+      }
+    });
+
+    final currentLatLng = currentPositionAsync.valueOrNull != null
+        ? LatLng(
+            currentPositionAsync.value!.latitude,
+            currentPositionAsync.value!.longitude,
+          )
+        : const LatLng(MapConstants.defaultLat, MapConstants.defaultLng);
 
     return Scaffold(
       appBar: AppBar(title: const Text('出没情報マップ')),
@@ -32,11 +66,9 @@ class SightingMapPage extends ConsumerWidget {
           Expanded(
             flex: 3,
             child: FlutterMap(
-              options: const MapOptions(
-                initialCenter: LatLng(
-                  MapConstants.defaultLat,
-                  MapConstants.defaultLng,
-                ),
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: currentLatLng,
                 initialZoom: MapConstants.defaultZoom,
               ),
               children: [
@@ -46,11 +78,8 @@ class SightingMapPage extends ConsumerWidget {
                 ),
                 MarkerLayer(
                   markers: [
-                    const Marker(
-                      point: LatLng(
-                        MapConstants.defaultLat,
-                        MapConstants.defaultLng,
-                      ),
+                    Marker(
+                      point: currentLatLng,
                       child: Icon(Icons.my_location, color: AppColors.primary),
                     ),
                     ...sightingsAsync.maybeWhen(
