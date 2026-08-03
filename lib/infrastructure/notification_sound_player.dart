@@ -6,6 +6,13 @@ import 'package:kumayokeru_app/domain/entities/notification_settings.dart';
 abstract interface class NotificationSoundPlayer {
   Future<void> playOnce(NotificationSoundType soundType, double volume);
 
+  /// バックグラウンドでもプロセスが維持されるよう、無音ループの再生を開始する。
+  /// (iOSは「音声を再生していない」アプリをバックグラウンドで終了させるため、
+  /// 存在通知ONの間は無音を鳴らし続けて「音声再生中」の状態を保つ。)
+  Future<void> startKeepAliveLoop();
+
+  Future<void> stopKeepAliveLoop();
+
   Future<void> dispose();
 }
 
@@ -15,12 +22,13 @@ abstract interface class NotificationSoundPlayer {
 /// 同じ音の単調な繰り返しはクマの馴化(音への慣れ)を招くとの調査結果を踏まえた設計
 /// (assets/audio/README.md参照)。
 ///
-/// TODO(#1): iOS(AVAudioSession .playback)・Android(フォアグラウンドサービス)での
-/// バックグラウンド再生継続は、audio_serviceパッケージのAudioHandler実装と実機での
-/// 複数機種検証が必要(Phase 0)。現時点ではアプリがフォアグラウンドの間のみ再生する。
+/// バックグラウンド再生継続は、AndroidはPresenceNotificationAudioHandler経由の
+/// フォアグラウンドサービス、iOSはUIBackgroundModes(audio)+無音ループ再生
+/// (startKeepAliveLoop)で実現する。実機での複数機種検証はPhase 0で別途行う。
 class JustAudioNotificationSoundPlayer implements NotificationSoundPlayer {
   final _bellPlayer = AudioPlayer();
   final _voicePlayer = AudioPlayer();
+  final _keepAlivePlayer = AudioPlayer();
   bool _nextVoiceIsMale = true;
 
   @override
@@ -51,8 +59,21 @@ class JustAudioNotificationSoundPlayer implements NotificationSoundPlayer {
   }
 
   @override
+  Future<void> startKeepAliveLoop() async {
+    await _keepAlivePlayer.setAsset('assets/audio/silence.wav');
+    await _keepAlivePlayer.setLoopMode(LoopMode.all);
+    await _keepAlivePlayer.play();
+  }
+
+  @override
+  Future<void> stopKeepAliveLoop() async {
+    await _keepAlivePlayer.stop();
+  }
+
+  @override
   Future<void> dispose() async {
     await _bellPlayer.dispose();
     await _voicePlayer.dispose();
+    await _keepAlivePlayer.dispose();
   }
 }

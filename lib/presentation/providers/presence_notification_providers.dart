@@ -3,16 +3,17 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kumayokeru_app/domain/entities/notification_settings.dart';
-import 'package:kumayokeru_app/infrastructure/notification_sound_player.dart';
+import 'package:kumayokeru_app/infrastructure/presence_notification_audio_handler.dart';
 import 'package:kumayokeru_app/presentation/providers/settings_providers.dart';
 
-final notificationSoundPlayerProvider = Provider<NotificationSoundPlayer>((
-  ref,
-) {
-  final player = JustAudioNotificationSoundPlayer();
-  ref.onDispose(() => unawaited(player.dispose()));
-  return player;
-});
+/// main_*.dartでAudioService.init()により生成した実体を
+/// overrideWithValue()すること前提のプレースホルダー。
+final presenceNotificationControllerProvider =
+    Provider<PresenceNotificationController>((ref) {
+      throw UnimplementedError(
+        'main()でpresenceNotificationControllerProvider.overrideWithValue()してください',
+      );
+    });
 
 /// 存在通知機能の再生状態(仕様書セクション8の状態遷移: idle/notifying)。
 class PresenceNotificationState {
@@ -35,52 +36,50 @@ class PresenceNotificationState {
   }
 }
 
+/// [PresenceNotificationController](実体はAndroid/iOSのバックグラウンド再生継続を
+/// 担うPresenceNotificationAudioHandler)を購読し、UIに薄く橋渡しするアダプタ。
+/// 再生ループそのものはコントローラ側が保持するため、ここでは
+/// Timer等の状態を持たない(single source of truthはコントローラ)。
 class PresenceNotificationNotifier
     extends StateNotifier<PresenceNotificationState> {
-  PresenceNotificationNotifier(this._player, this._settings)
-    : super(const PresenceNotificationState());
+  PresenceNotificationNotifier(this._controller, NotificationSettings settings)
+    : super(const PresenceNotificationState()) {
+    _controller.updateSettings(settings);
+    _isNotifyingSubscription = _controller.isNotifyingStream.listen((
+      isNotifying,
+    ) {
+      state = state.copyWith(isNotifying: isNotifying);
+    });
+    _secondsSubscription = _controller.secondsUntilNextPlayStream.listen((
+      seconds,
+    ) {
+      state = state.copyWith(secondsUntilNextPlay: seconds);
+    });
+  }
 
-  final NotificationSoundPlayer _player;
-  NotificationSettings _settings;
-  Timer? _timer;
+  final PresenceNotificationController _controller;
+  late final StreamSubscription<bool> _isNotifyingSubscription;
+  late final StreamSubscription<int> _secondsSubscription;
 
   /// 設定変更(再生間隔・音源・音量)を反映する。
   void updateSettings(NotificationSettings settings) {
-    _settings = settings;
+    _controller.updateSettings(settings);
   }
 
   void start() {
-    if (state.isNotifying) return;
-    state = PresenceNotificationState(
-      isNotifying: true,
-      secondsUntilNextPlay: _settings.intervalSec,
-    );
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+    unawaited(_controller.start());
   }
 
   void stop() {
-    _timer?.cancel();
-    _timer = null;
-    state = const PresenceNotificationState();
+    unawaited(_controller.stop());
   }
 
-  Future<void> playNow() {
-    return _player.playOnce(_settings.soundType, _settings.volume);
-  }
-
-  void _tick() {
-    final remaining = state.secondsUntilNextPlay - 1;
-    if (remaining <= 0) {
-      unawaited(playNow());
-      state = state.copyWith(secondsUntilNextPlay: _settings.intervalSec);
-    } else {
-      state = state.copyWith(secondsUntilNextPlay: remaining);
-    }
-  }
+  Future<void> playNow() => _controller.playNow();
 
   @override
   void dispose() {
-    _timer?.cancel();
+    unawaited(_isNotifyingSubscription.cancel());
+    unawaited(_secondsSubscription.cancel());
     super.dispose();
   }
 }
@@ -91,7 +90,7 @@ final presenceNotificationProvider =
       PresenceNotificationState
     >((ref) {
       final notifier = PresenceNotificationNotifier(
-        ref.watch(notificationSoundPlayerProvider),
+        ref.watch(presenceNotificationControllerProvider),
         ref.read(audioSettingsProvider),
       );
       ref.listen(audioSettingsProvider, (_, next) {

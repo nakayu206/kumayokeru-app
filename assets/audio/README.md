@@ -9,6 +9,7 @@
 | `bell.mp3` | 鈴の音(チリリン) | [効果音ラボ](https://soundeffect-lab.info/sound/various/various3.html) |
 | `voice_male.mp3` | 男性の掛け声「オーッ！」 | [効果音ラボ](https://soundeffect-lab.info/sound/voice/people.html) |
 | `voice_female.mp3` | 女性の掛け声「オーッ！」 | [効果音ラボ](https://soundeffect-lab.info/sound/voice/people.html) |
+| `silence.wav` | 完全無音(1秒・自前生成) | なし(このリポジトリで生成) |
 
 ## ライセンス
 
@@ -17,6 +18,10 @@
 
 再配布(音素材そのものの二次配布・転売)は禁止されているため、このリポジトリ外への
 音源ファイル単体での転用は行わないこと。
+
+`silence.wav`はライセンス対象外(このリポジトリで生成した無音PCM)。存在通知ON中に
+ループ再生し続けることで、iOSがアプリを「音声再生していない」とみなしてバックグラウンド
+プロセスを終了させるのを防ぐ(audio_serviceパッケージのREADMEで推奨されている手法)。
 
 ## 今後の検討
 

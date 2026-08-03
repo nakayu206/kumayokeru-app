@@ -10,8 +10,10 @@ import 'package:kumayokeru_app/presentation/providers/presence_notification_prov
 
 /// ホーム画面(仕様書セクション12 ①)。
 ///
-/// 存在通知音の再生(#10)はjust_audioで実装済み(フォアグラウンドのみ。
-/// バックグラウンド継続はPhase 0での実機検証待ち、infrastructure/notification_sound_player.dart参照)。
+/// 存在通知音の再生(#10)はjust_audioで実装済み。バックグラウンド継続は
+/// PresenceNotificationAudioHandler(audio_service)がAndroidのフォアグラウンド
+/// サービス化・iOSのバックグラウンド音声再生モードを担う(実機での複数機種検証は
+/// Phase 0で別途行う。infrastructure/presence_notification_audio_handler.dart参照)。
 /// TODO(#11): 出没情報アラートを実データと結合する。
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});

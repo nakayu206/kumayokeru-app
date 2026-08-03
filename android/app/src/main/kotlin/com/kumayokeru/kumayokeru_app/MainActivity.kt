@@ -1,5 +1,7 @@
 package com.kumayokeru.kumayokeru_app
 
-import io.flutter.embedding.android.FlutterActivity
+import com.ryanheise.audioservice.AudioServiceActivity
 
-class MainActivity : FlutterActivity()
+// 存在通知機能のバックグラウンド再生継続(audio_service)のため、
+// FlutterActivityではなくAudioServiceActivityを継承する。
+class MainActivity : AudioServiceActivity()
