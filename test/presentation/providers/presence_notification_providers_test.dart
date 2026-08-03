@@ -1,118 +1,128 @@
-import 'package:fake_async/fake_async.dart';
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kumayokeru_app/domain/entities/notification_settings.dart';
-import 'package:kumayokeru_app/infrastructure/notification_sound_player.dart';
+import 'package:kumayokeru_app/infrastructure/presence_notification_audio_handler.dart';
 import 'package:kumayokeru_app/presentation/providers/presence_notification_providers.dart';
 
-class _FakeSoundPlayer implements NotificationSoundPlayer {
-  int playCount = 0;
-  NotificationSoundType? lastSoundType;
-  double? lastVolume;
+/// 実際のバックグラウンド再生継続はPresenceNotificationAudioHandler側の責務
+/// (test/infrastructure/presence_notification_audio_handler_test.dart参照)。
+/// ここではNotifierがコントローラへ操作を委譲し、コントローラのストリームを
+/// stateに反映するだけの薄いアダプタであることを検証する。
+class _FakeController implements PresenceNotificationController {
+  final _isNotifyingController = StreamController<bool>.broadcast();
+  final _secondsController = StreamController<int>.broadcast();
+  final updatedSettings = <NotificationSettings>[];
+  int startCallCount = 0;
+  int stopCallCount = 0;
+  int playNowCallCount = 0;
 
   @override
-  Future<void> playOnce(NotificationSoundType soundType, double volume) async {
-    playCount++;
-    lastSoundType = soundType;
-    lastVolume = volume;
+  Stream<bool> get isNotifyingStream => _isNotifyingController.stream;
+
+  @override
+  Stream<int> get secondsUntilNextPlayStream => _secondsController.stream;
+
+  @override
+  void updateSettings(NotificationSettings settings) {
+    updatedSettings.add(settings);
   }
 
   @override
-  Future<void> dispose() async {}
+  Future<void> start() async {
+    startCallCount++;
+  }
+
+  @override
+  Future<void> stop() async {
+    stopCallCount++;
+  }
+
+  @override
+  Future<void> playNow() async {
+    playNowCallCount++;
+  }
+
+  void emitIsNotifying(bool value) => _isNotifyingController.add(value);
+  void emitSeconds(int value) => _secondsController.add(value);
+
+  Future<void> dispose() async {
+    await _isNotifyingController.close();
+    await _secondsController.close();
+  }
 }
 
 void main() {
   group('PresenceNotificationNotifier', () {
-    test('start()前はidle状態', () {
+    test('初期状態はidle', () {
+      final controller = _FakeController();
       final notifier = PresenceNotificationNotifier(
-        _FakeSoundPlayer(),
+        controller,
         const NotificationSettings(),
       );
       addTearDown(notifier.dispose);
+      addTearDown(controller.dispose);
 
       expect(notifier.state.isNotifying, false);
       expect(notifier.state.secondsUntilNextPlay, 0);
     });
 
-    test('start()でnotifying状態になり、intervalSec秒後に自動再生する', () {
-      fakeAsync((async) {
-        final player = _FakeSoundPlayer();
-        final notifier = PresenceNotificationNotifier(
-          player,
-          const NotificationSettings(intervalSec: 30),
-        );
-        addTearDown(notifier.dispose);
-
-        notifier.start();
-        expect(notifier.state.isNotifying, true);
-        expect(notifier.state.secondsUntilNextPlay, 30);
-
-        async.elapse(const Duration(seconds: 29));
-        expect(player.playCount, 0);
-        expect(notifier.state.secondsUntilNextPlay, 1);
-
-        async.elapse(const Duration(seconds: 1));
-        expect(player.playCount, 1);
-        expect(notifier.state.secondsUntilNextPlay, 30);
-      });
-    });
-
-    test('stop()でidle状態に戻り、タイマーが止まる', () {
-      fakeAsync((async) {
-        final player = _FakeSoundPlayer();
-        final notifier = PresenceNotificationNotifier(
-          player,
-          const NotificationSettings(intervalSec: 10),
-        );
-        addTearDown(notifier.dispose);
-
-        notifier.start();
-        async.elapse(const Duration(seconds: 5));
-        notifier.stop();
-
-        expect(notifier.state.isNotifying, false);
-        expect(notifier.state.secondsUntilNextPlay, 0);
-
-        async.elapse(const Duration(seconds: 30));
-        expect(player.playCount, 0);
-      });
-    });
-
-    test('playNow()は現在の設定(音源・音量)でただちに1回再生する', () async {
-      final player = _FakeSoundPlayer();
+    test('コントローラのストリームの値をstateに反映する', () async {
+      final controller = _FakeController();
       final notifier = PresenceNotificationNotifier(
-        player,
-        const NotificationSettings(
-          soundType: NotificationSoundType.voice,
-          volume: 0.8,
-        ),
+        controller,
+        const NotificationSettings(),
       );
       addTearDown(notifier.dispose);
+      addTearDown(controller.dispose);
 
-      await notifier.playNow();
+      controller.emitIsNotifying(true);
+      controller.emitSeconds(30);
+      await pumpEventQueue();
 
-      expect(player.playCount, 1);
-      expect(player.lastSoundType, NotificationSoundType.voice);
-      expect(player.lastVolume, 0.8);
+      expect(notifier.state.isNotifying, true);
+      expect(notifier.state.secondsUntilNextPlay, 30);
+
+      controller.emitIsNotifying(false);
+      await pumpEventQueue();
+
+      expect(notifier.state.isNotifying, false);
     });
 
-    test('updateSettings()で以後の再生間隔が変わる', () {
-      fakeAsync((async) {
-        final player = _FakeSoundPlayer();
-        final notifier = PresenceNotificationNotifier(
-          player,
-          const NotificationSettings(intervalSec: 30),
-        );
-        addTearDown(notifier.dispose);
+    test('start()/stop()/playNow()はコントローラへ委譲される', () async {
+      final controller = _FakeController();
+      final notifier = PresenceNotificationNotifier(
+        controller,
+        const NotificationSettings(),
+      );
+      addTearDown(notifier.dispose);
+      addTearDown(controller.dispose);
 
-        notifier.start();
-        notifier.updateSettings(const NotificationSettings(intervalSec: 5));
+      notifier.start();
+      expect(controller.startCallCount, 1);
 
-        // 現在のカウントダウンは変更されないが、次回以降の間隔には反映される。
-        async.elapse(const Duration(seconds: 30));
-        expect(player.playCount, 1);
-        expect(notifier.state.secondsUntilNextPlay, 5);
-      });
+      notifier.stop();
+      expect(controller.stopCallCount, 1);
+
+      await notifier.playNow();
+      expect(controller.playNowCallCount, 1);
+    });
+
+    test('コンストラクタとupdateSettings()はコントローラへ設定を委譲する', () {
+      final controller = _FakeController();
+      const initialSettings = NotificationSettings(intervalSec: 30);
+      final notifier = PresenceNotificationNotifier(
+        controller,
+        initialSettings,
+      );
+      addTearDown(notifier.dispose);
+      addTearDown(controller.dispose);
+
+      const updated = NotificationSettings(intervalSec: 5);
+      notifier.updateSettings(updated);
+
+      expect(controller.updatedSettings, [initialSettings, updated]);
     });
   });
 }
