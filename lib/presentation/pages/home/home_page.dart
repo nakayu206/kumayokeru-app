@@ -243,7 +243,7 @@ class _WeatherContent extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(condition.icon, color: condition.color, size: AppSizes.iconLg),
+        _WeatherIcon(condition: condition, size: AppSizes.iconLg),
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
@@ -269,6 +269,51 @@ class _WeatherContent extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 天気アイコンの表示。「晴れ時々曇り」(Icons.wb_cloudy)は雲の形しか描かれず
+/// 太陽が見えないため、実際に「晴れ+曇り」に見えるよう太陽アイコンを
+/// 後ろに重ねて表示する。それ以外の天気は単一アイコンをそのまま表示する。
+class _WeatherIcon extends StatelessWidget {
+  const _WeatherIcon({required this.condition, required this.size});
+
+  final _WeatherCondition condition;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    if (condition.icon != Icons.wb_cloudy) {
+      return Icon(condition.icon, color: condition.color, size: size);
+    }
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            top: 0,
+            right: 0,
+            child: Icon(
+              Icons.wb_sunny,
+              color: const Color(0xFFF57C00),
+              size: size * 0.55,
+            ),
+          ),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            child: Icon(
+              condition.icon,
+              color: condition.color,
+              size: size * 0.8,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -310,7 +355,9 @@ _WeatherCondition _weatherCondition(int code) {
     ),
     51 || 53 || 55 || 56 || 57 => const _WeatherCondition(
       '霧雨',
-      Icons.grain,
+      // Icons.grainは実際には写真のノイズ質感(フィルムグレイン)のアイコンで
+      // 雨と無関係のため、雨と同じ水滴系のIcons.opacityを使う。
+      Icons.opacity,
       Color(0xFF5C6BC0), // 淡い青
     ),
     61 || 63 || 65 || 66 || 67 || 80 || 81 || 82 => const _WeatherCondition(
