@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kumayokeru_app/core/constants/app_colors.dart';
 import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
+import 'package:kumayokeru_app/domain/entities/current_weather.dart';
 import 'package:kumayokeru_app/domain/entities/hiking_session.dart';
+import 'package:kumayokeru_app/presentation/providers/geocoding_providers.dart';
 import 'package:kumayokeru_app/presentation/providers/hiking_session_providers.dart';
 import 'package:kumayokeru_app/presentation/providers/presence_notification_providers.dart';
+import 'package:kumayokeru_app/presentation/providers/weather_providers.dart';
 
 /// ホーム画面(仕様書セクション12 ①)。
 ///
@@ -48,7 +51,7 @@ class HomePage extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.lg),
-              _CurrentLocationCard(),
+              const _CurrentLocationCard(),
               const SizedBox(height: AppSpacing.lg),
               _NotificationCard(
                 state: notificationState,
@@ -59,6 +62,8 @@ class HomePage extends ConsumerWidget {
               const _SightingAlertBanner(),
               const SizedBox(height: AppSpacing.lg),
               _HikingSummaryCard(session: hikingSession),
+              const SizedBox(height: AppSpacing.lg),
+              const _WeatherCard(),
             ],
           ),
         ),
@@ -67,9 +72,13 @@ class HomePage extends ConsumerWidget {
   }
 }
 
-class _CurrentLocationCard extends StatelessWidget {
+class _CurrentLocationCard extends ConsumerWidget {
+  const _CurrentLocationCard();
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final labelAsync = ref.watch(currentLocationLabelProvider);
+
     return Card(
       color: AppColors.surface,
       child: Padding(
@@ -82,7 +91,13 @@ class _CurrentLocationCard extends StatelessWidget {
               size: AppSizes.iconMd,
             ),
             const SizedBox(width: AppSpacing.sm),
-            Text('現在地: ●●山 登山道', style: TextStyle(fontSize: AppSizes.fontLg)),
+            Expanded(
+              child: Text(
+                '現在地: ${labelAsync.when(loading: () => '取得中...', error: (error, _) => '取得できませんでした', data: (label) => label)}',
+                style: TextStyle(fontSize: AppSizes.fontLg),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),
@@ -166,6 +181,119 @@ class _NotificationCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _WeatherCard extends ConsumerWidget {
+  const _WeatherCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final weatherAsync = ref.watch(currentWeatherProvider);
+
+    return Card(
+      color: AppColors.surface,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '現在地の天気',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: AppSizes.fontMd,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            weatherAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => Text(
+                '天気情報を取得できませんでした',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              data: (weather) => _WeatherContent(weather: weather),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WeatherContent extends StatelessWidget {
+  const _WeatherContent({required this.weather});
+
+  final CurrentWeather weather;
+
+  @override
+  Widget build(BuildContext context) {
+    final condition = _weatherCondition(weather.weatherCode);
+
+    return Row(
+      children: [
+        Icon(condition.icon, color: AppColors.primary, size: AppSizes.iconLg),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${weather.temperatureCelsius.round()}℃ ${condition.label}',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: AppSizes.fontLg,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                '湿度 ${weather.humidityPercent}% / 風速 ${weather.windSpeedKmh.round()}km/h'
+                '${weather.precipitationMm > 0 ? ' / 降水 ${weather.precipitationMm.toStringAsFixed(1)}mm' : ''}',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: AppSizes.fontSm,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WeatherCondition {
+  const _WeatherCondition(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
+}
+
+/// WMO Weather interpretation code(Open-Meteoの天気コード)を日本語表示に変換する。
+/// https://open-meteo.com/en/docs で定義されているコード一覧に基づく。
+_WeatherCondition _weatherCondition(int code) {
+  return switch (code) {
+    0 => const _WeatherCondition('快晴', Icons.wb_sunny),
+    1 || 2 => const _WeatherCondition('晴れ時々曇り', Icons.wb_cloudy),
+    3 => const _WeatherCondition('曇り', Icons.cloud),
+    45 || 48 => const _WeatherCondition('霧', Icons.foggy),
+    51 || 53 || 55 || 56 || 57 => const _WeatherCondition('霧雨', Icons.grain),
+    61 ||
+    63 ||
+    65 ||
+    66 ||
+    67 ||
+    80 ||
+    81 ||
+    82 => const _WeatherCondition('雨', Icons.water_drop),
+    71 ||
+    73 ||
+    75 ||
+    77 ||
+    85 ||
+    86 => const _WeatherCondition('雪', Icons.ac_unit),
+    95 || 96 || 99 => const _WeatherCondition('雷雨', Icons.thunderstorm),
+    _ => const _WeatherCondition('不明', Icons.help_outline),
+  };
 }
 
 class _HikingSummaryCard extends StatelessWidget {
