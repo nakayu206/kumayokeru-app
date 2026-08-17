@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
 
+import 'package:kumayokeru_app/core/constants/map_constants.dart';
 import 'package:kumayokeru_app/domain/entities/notification_settings.dart';
 import 'package:kumayokeru_app/infrastructure/notification_sound_player.dart';
+import 'package:kumayokeru_app/infrastructure/self_check_notification_service.dart';
 
 /// 存在通知機能のUI(Riverpod)側から見た操作インターフェース。
 ///
@@ -29,9 +31,10 @@ abstract interface class PresenceNotificationController {
 /// [secondsUntilNextPlayStream]を購読するだけの薄いアダプタとする。
 class PresenceNotificationAudioHandler extends BaseAudioHandler
     implements PresenceNotificationController {
-  PresenceNotificationAudioHandler(this._player);
+  PresenceNotificationAudioHandler(this._player, this._selfCheck);
 
   final NotificationSoundPlayer _player;
+  final SelfCheckNotificationService _selfCheck;
   NotificationSettings _settings = const NotificationSettings();
   Timer? _timer;
 
@@ -76,8 +79,20 @@ class PresenceNotificationAudioHandler extends BaseAudioHandler
       ),
     );
 
-    await _player.startKeepAliveLoop();
+    // 無音ループの開始(iOSのバックグラウンド継続用の補助策)は失敗/ハングしても
+    // 再生ループ・セルフチェック通知(こちらが本質的な機能)を止めてはならないため、
+    // タイムアウトを設けてベストエフォートで扱う。
+    await _startKeepAliveLoopBestEffort();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+    unawaited(_scheduleSelfCheck());
+  }
+
+  Future<void> _startKeepAliveLoopBestEffort() async {
+    try {
+      await _player.startKeepAliveLoop().timeout(const Duration(seconds: 5));
+    } catch (_) {
+      // 失敗しても再生ループ自体は継続する。
+    }
   }
 
   @override
@@ -87,7 +102,12 @@ class PresenceNotificationAudioHandler extends BaseAudioHandler
     _secondsUntilNextPlay = 0;
     _secondsUntilNextPlayController.add(0);
 
-    await _player.stopKeepAliveLoop();
+    try {
+      await _player.stopKeepAliveLoop().timeout(const Duration(seconds: 5));
+    } catch (_) {
+      // 失敗しても停止処理自体は継続する。
+    }
+    await _selfCheck.cancelCheck();
     playbackState.add(
       playbackState.value.copyWith(playing: false, controls: []),
     );
@@ -104,10 +124,22 @@ class PresenceNotificationAudioHandler extends BaseAudioHandler
     if (remaining <= 0) {
       unawaited(playNow());
       _secondsUntilNextPlay = _settings.intervalSec;
+      unawaited(_scheduleSelfCheck());
     } else {
       _secondsUntilNextPlay = remaining;
     }
     _secondsUntilNextPlayController.add(_secondsUntilNextPlay);
+  }
+
+  /// 「次のtickが来るまでの見込み時間+猶予」だけ先にセルフチェック通知を予約する。
+  /// 再生が正常に続く限り毎tickごとにこれで上書きされ続けるため、実際には
+  /// 通知は出ない。再生ループが止まった場合だけ、予約済みの通知がそのまま発火する。
+  Future<void> _scheduleSelfCheck() {
+    return _selfCheck.scheduleCheck(
+      Duration(
+        seconds: _settings.intervalSec + AudioConstants.selfCheckMarginSec,
+      ),
+    );
   }
 
   Future<void> disposeHandler() async {

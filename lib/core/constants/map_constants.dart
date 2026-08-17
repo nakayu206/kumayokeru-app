@@ -32,4 +32,8 @@ class AudioConstants {
 
   /// 最大音量ではなく控えめな初期値。
   static const defaultVolume = 0.6;
+
+  /// セルフチェック通知(#再生停止検知)の猶予秒数。
+  /// 「再生間隔 + この秒数」だけ次のtickが来なければ、再生が止まったとみなして通知する。
+  static const selfCheckMarginSec = 30;
 }
