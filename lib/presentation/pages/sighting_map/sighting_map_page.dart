@@ -31,7 +31,8 @@ Color _sightingColor(SightingSourceType sourceType) {
 /// 目撃情報の投稿(`POST /sightings`)は認証不要で誰でも可能。
 /// 現在地はgeolocatorで取得でき次第、地図の中心とマーカーに反映する
 /// (取得できるまで/失敗時はデフォルト座標を表示)。
-/// TODO(#11): Isarへのキャッシュ(オフライン閲覧用)、距離絞り込みと結合する。
+/// 現在地が分かっている場合、一覧は現在地から近い順に並び替える。
+/// 地域名・状況テキストでの検索、一覧タップでの地図フォーカスにも対応。
 class SightingMapPage extends ConsumerStatefulWidget {
   const SightingMapPage({super.key});
 
@@ -41,10 +42,13 @@ class SightingMapPage extends ConsumerStatefulWidget {
 
 class _SightingMapPageState extends ConsumerState<SightingMapPage> {
   final _mapController = MapController();
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void dispose() {
     _mapController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -52,6 +56,7 @@ class _SightingMapPageState extends ConsumerState<SightingMapPage> {
   Widget build(BuildContext context) {
     final sightingsAsync = ref.watch(sightingsProvider);
     final currentPositionAsync = ref.watch(currentPositionProvider);
+    final currentPosition = currentPositionAsync.valueOrNull;
 
     ref.listen(currentPositionProvider, (previous, next) {
       final position = next.valueOrNull;
@@ -132,6 +137,24 @@ class _SightingMapPageState extends ConsumerState<SightingMapPage> {
               ),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: '地域名・状況で検索',
+                prefixIcon: const Icon(Icons.search),
+                isDense: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                ),
+              ),
+              onChanged: (value) => setState(() => _searchQuery = value.trim()),
+            ),
+          ),
           Expanded(
             flex: 2,
             child: Padding(
@@ -144,30 +167,89 @@ class _SightingMapPageState extends ConsumerState<SightingMapPage> {
                     textAlign: TextAlign.center,
                   ),
                 ),
-                data: (sightings) => ListView(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.sm,
-                      ),
+                data: (sightings) {
+                  final filtered = _filterAndSort(sightings, currentPosition);
+                  if (filtered.isEmpty) {
+                    return Center(
                       child: Text(
-                        '最新の目撃情報',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: AppSizes.fontMd,
+                        '該当する目撃情報がありません',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    );
+                  }
+                  return ListView(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.sm,
+                        ),
+                        child: Text(
+                          currentPosition == null ? '最新の目撃情報' : '現在地に近い目撃情報',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: AppSizes.fontMd,
+                          ),
                         ),
                       ),
-                    ),
-                    for (final sighting in sightings)
-                      _SightingTile(sighting: sighting),
-                  ],
-                ),
+                      for (final sighting in filtered)
+                        _SightingTile(
+                          sighting: sighting,
+                          onTap: () => _focusOnSighting(sighting),
+                        ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  void _focusOnSighting(SightingPost sighting) {
+    _mapController.move(
+      LatLng(sighting.lat, sighting.lng),
+      MapConstants.detailZoom,
+    );
+  }
+
+  List<SightingPost> _filterAndSort(
+    List<SightingPost> sightings,
+    Position? currentPosition,
+  ) {
+    var result = sightings;
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      result = result
+          .where(
+            (sighting) =>
+                sighting.areaName.toLowerCase().contains(query) ||
+                sighting.description.toLowerCase().contains(query),
+          )
+          .toList();
+    }
+
+    if (currentPosition != null) {
+      result = [...result]
+        ..sort((a, b) {
+          final distanceA = Geolocator.distanceBetween(
+            currentPosition.latitude,
+            currentPosition.longitude,
+            a.lat,
+            a.lng,
+          );
+          final distanceB = Geolocator.distanceBetween(
+            currentPosition.latitude,
+            currentPosition.longitude,
+            b.lat,
+            b.lng,
+          );
+          return distanceA.compareTo(distanceB);
+        });
+    }
+
+    return result;
   }
 
   Future<void> _showPostSightingDialog(
@@ -280,9 +362,10 @@ class _SightingMapPageState extends ConsumerState<SightingMapPage> {
 }
 
 class _SightingTile extends StatelessWidget {
-  const _SightingTile({required this.sighting});
+  const _SightingTile({required this.sighting, required this.onTap});
 
   final SightingPost sighting;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -291,6 +374,7 @@ class _SightingTile extends StatelessWidget {
         '${sighting.sightedAt.year}/${sighting.sightedAt.month.toString().padLeft(2, '0')}/${sighting.sightedAt.day.toString().padLeft(2, '0')}';
 
     return ListTile(
+      onTap: onTap,
       leading: Icon(
         Icons.pets,
         color: _sightingColor(sighting.sourceType),
