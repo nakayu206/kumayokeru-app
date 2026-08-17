@@ -295,7 +295,8 @@ _WeatherCondition _weatherCondition(int code) {
     1 || 2 => const _WeatherCondition(
       '晴れ時々曇り',
       Icons.wb_cloudy,
-      Color(0xFFFFA726), // 薄めのオレンジ
+      // 雲の形のアイコンなので、オレンジ(黄色っぽく見える)ではなくグレー系にする。
+      Color(0xFF78909C),
     ),
     3 => const _WeatherCondition(
       '曇り',
