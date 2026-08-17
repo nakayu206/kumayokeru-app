@@ -61,6 +61,9 @@ dependencies:
   # 写真投稿(Phase2)
   image_picker: ^1.2.2
 
+  # 緊急連絡(SOS)での電話発信
+  url_launcher: ^6.3.1
+
   # kumayokeru-backend(出没情報API等)との通信
   http: ^1.2.2
 

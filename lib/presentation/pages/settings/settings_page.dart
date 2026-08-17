@@ -125,17 +125,22 @@ class SettingsPage extends ConsumerWidget {
               MaterialPageRoute(builder: (_) => const MapDataManagementPage()),
             ),
           ),
+          // プライバシーポリシー・免責事項は正式リリース(Phase 3)前に専門家の
+          // レビューを経て文言を確定させる方針(docs/全体設計書.md参照)のため、
+          // ここでは「準備中」であることを明示し、タップしても壊れて見えないようにする。
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('プライバシー設定'),
+            subtitle: const Text('準備中'),
+            enabled: false,
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('免責事項を確認する'),
+            subtitle: const Text('準備中'),
+            enabled: false,
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
           ),
         ],
       ),
