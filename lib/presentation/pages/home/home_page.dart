@@ -195,9 +195,15 @@ class _WeatherCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final weatherAsync = ref.watch(currentWeatherProvider);
+    final weather = weatherAsync.valueOrNull;
+    // 天気が分かっている間は、その天気の色をカード背景にも薄く反映させて
+    // アイコンの色と合わせて一目で分かるようにする。
+    final backgroundColor = weather == null
+        ? AppColors.surface
+        : _weatherCondition(weather.weatherCode).color.withValues(alpha: 0.12);
 
     return Card(
-      color: AppColors.surface,
+      color: backgroundColor,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
