@@ -20,6 +20,9 @@ class MapConstants {
   static const offlineDownloadRadiusKm = 5.0;
   static const offlineDownloadMinZoom = 12;
   static const offlineDownloadMaxZoom = 16;
+
+  /// ホーム画面の目撃情報アラートバナーで「付近」とみなす半径(メートル)。
+  static const nearbySightingAlertRadiusMeters = 10000.0;
 }
 
 /// 存在通知音の再生に関する定数(仕様書セクション15)。

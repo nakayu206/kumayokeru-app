@@ -9,6 +9,7 @@ import 'package:kumayokeru_app/domain/entities/hiking_session.dart';
 import 'package:kumayokeru_app/presentation/providers/geocoding_providers.dart';
 import 'package:kumayokeru_app/presentation/providers/hiking_session_providers.dart';
 import 'package:kumayokeru_app/presentation/providers/presence_notification_providers.dart';
+import 'package:kumayokeru_app/presentation/providers/sighting_providers.dart';
 import 'package:kumayokeru_app/presentation/providers/weather_providers.dart';
 
 /// ホーム画面(仕様書セクション12 ①)。
@@ -17,7 +18,6 @@ import 'package:kumayokeru_app/presentation/providers/weather_providers.dart';
 /// PresenceNotificationAudioHandler(audio_service)がAndroidのフォアグラウンド
 /// サービス化・iOSのバックグラウンド音声再生モードを担う(実機での複数機種検証は
 /// Phase 0で別途行う。infrastructure/presence_notification_audio_handler.dart参照)。
-/// TODO(#11): 出没情報アラートを実データと結合する。
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
@@ -183,6 +183,12 @@ class _NotificationCard extends StatelessWidget {
   }
 }
 
+String _formatDaysAgo(DateTime sightedAt) {
+  final days = DateTime.now().difference(sightedAt).inDays;
+  if (days <= 0) return '今日';
+  return '$days日前';
+}
+
 class _WeatherCard extends ConsumerWidget {
   const _WeatherCard();
 
@@ -231,7 +237,7 @@ class _WeatherContent extends StatelessWidget {
 
     return Row(
       children: [
-        Icon(condition.icon, color: AppColors.primary, size: AppSizes.iconLg),
+        Icon(condition.icon, color: condition.color, size: AppSizes.iconLg),
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
@@ -262,37 +268,60 @@ class _WeatherContent extends StatelessWidget {
 }
 
 class _WeatherCondition {
-  const _WeatherCondition(this.label, this.icon);
+  const _WeatherCondition(this.label, this.icon, this.color);
 
   final String label;
   final IconData icon;
+  final Color color;
 }
 
 /// WMO Weather interpretation code(Open-Meteoの天気コード)を日本語表示に変換する。
 /// https://open-meteo.com/en/docs で定義されているコード一覧に基づく。
+/// 色は天気が一目で分かるよう、それぞれの天気を連想させる配色にしている
+/// (アプリ共通のブランドカラーではなく、この天気カード限定の配色)。
 _WeatherCondition _weatherCondition(int code) {
   return switch (code) {
-    0 => const _WeatherCondition('快晴', Icons.wb_sunny),
-    1 || 2 => const _WeatherCondition('晴れ時々曇り', Icons.wb_cloudy),
-    3 => const _WeatherCondition('曇り', Icons.cloud),
-    45 || 48 => const _WeatherCondition('霧', Icons.foggy),
-    51 || 53 || 55 || 56 || 57 => const _WeatherCondition('霧雨', Icons.grain),
-    61 ||
-    63 ||
-    65 ||
-    66 ||
-    67 ||
-    80 ||
-    81 ||
-    82 => const _WeatherCondition('雨', Icons.water_drop),
-    71 ||
-    73 ||
-    75 ||
-    77 ||
-    85 ||
-    86 => const _WeatherCondition('雪', Icons.ac_unit),
-    95 || 96 || 99 => const _WeatherCondition('雷雨', Icons.thunderstorm),
-    _ => const _WeatherCondition('不明', Icons.help_outline),
+    0 => const _WeatherCondition(
+      '快晴',
+      Icons.wb_sunny,
+      Color(0xFFF57C00), // オレンジ
+    ),
+    1 || 2 => const _WeatherCondition(
+      '晴れ時々曇り',
+      Icons.wb_cloudy,
+      Color(0xFFFFA726), // 薄めのオレンジ
+    ),
+    3 => const _WeatherCondition(
+      '曇り',
+      Icons.cloud,
+      Color(0xFF90A4AE), // グレー(雲)
+    ),
+    45 || 48 => const _WeatherCondition(
+      '霧',
+      Icons.foggy,
+      Color(0xFFB0BEC5), // 薄いグレー
+    ),
+    51 || 53 || 55 || 56 || 57 => const _WeatherCondition(
+      '霧雨',
+      Icons.grain,
+      Color(0xFF5C6BC0), // 淡い青
+    ),
+    61 || 63 || 65 || 66 || 67 || 80 || 81 || 82 => const _WeatherCondition(
+      '雨',
+      Icons.water_drop,
+      Color(0xFF1A3A6B), // 黒みがかった青
+    ),
+    71 || 73 || 75 || 77 || 85 || 86 => const _WeatherCondition(
+      '雪',
+      Icons.ac_unit,
+      Color(0xFF4FC3F7), // 水色
+    ),
+    95 || 96 || 99 => const _WeatherCondition(
+      '雷雨',
+      Icons.thunderstorm,
+      Color(0xFF4A148C), // 濃い紫
+    ),
+    _ => const _WeatherCondition('不明', Icons.help_outline, Color(0xFF9E9E9E)),
   };
 }
 
@@ -390,11 +419,18 @@ class _SummaryStat extends StatelessWidget {
   }
 }
 
-class _SightingAlertBanner extends StatelessWidget {
+class _SightingAlertBanner extends ConsumerWidget {
   const _SightingAlertBanner();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nearbySighting = ref.watch(nearbySightingAlertProvider);
+    final sighting = nearbySighting.valueOrNull;
+
+    // 現在地不明・取得失敗・付近に目撃情報なし、のいずれの場合もバナー自体を出さない
+    // (無関係な地域の情報で不安を煽らないため)。
+    if (sighting == null) return const SizedBox.shrink();
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -408,7 +444,7 @@ class _SightingAlertBanner extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
-              'この付近で3日前に目撃情報',
+              'この付近で${_formatDaysAgo(sighting.sightedAt)}に目撃情報',
               style: TextStyle(color: AppColors.textPrimary),
             ),
           ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:kumayokeru_app/core/constants/app_colors.dart';
 import 'package:kumayokeru_app/core/constants/app_sizes.dart';
@@ -236,7 +237,7 @@ class _AuthenticatedLocationSharingViewState
           width: double.infinity,
           height: AppSizes.buttonHeight,
           child: ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () => _showEmergencyDialog(context, notifier),
             icon: const Icon(Icons.sos),
             label: const Text('緊急連絡'),
             style: ElevatedButton.styleFrom(
@@ -282,6 +283,50 @@ class _AuthenticatedLocationSharingViewState
 
     if (email != null && email.isNotEmpty) {
       await notifier.inviteMember(email);
+    }
+  }
+
+  Future<void> _showEmergencyDialog(
+    BuildContext context,
+    LocationSharingNotifier notifier,
+  ) async {
+    final phoneNumber = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('緊急連絡'),
+        content: const Text('選択した番号に電話をかけると同時に、現在地を仲間に共有します。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('キャンセル'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop('110'),
+            child: const Text('警察(110)'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.of(dialogContext).pop('119'),
+            child: const Text('消防・救急(119)'),
+          ),
+        ],
+      ),
+    );
+
+    if (phoneNumber == null) return;
+
+    // 電話発信は通信状況に関わらず必ず試みるため、位置共有(失敗しうる)とは
+    // 独立して扱う。位置共有側のエラーは_shareCurrentLocation内で表示済み。
+    await _shareCurrentLocation(notifier);
+
+    final uri = Uri(scheme: 'tel', path: phoneNumber);
+    final canLaunch = await canLaunchUrl(uri);
+    if (!context.mounted) return;
+
+    if (canLaunch) {
+      await launchUrl(uri);
+    } else {
+      await showErrorDialog(context, '電話アプリを起動できませんでした');
     }
   }
 

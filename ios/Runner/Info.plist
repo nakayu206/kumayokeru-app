@@ -36,6 +36,11 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<!-- 緊急連絡(SOS)ボタンでの電話発信(url_launcher)用 -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
