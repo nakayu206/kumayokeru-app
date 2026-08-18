@@ -104,6 +104,34 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
       state = state.copyWith(errorMessage: e.toString());
     }
   }
+
+  /// 他のメンバーをグループから削除する(オーナーのみ実行可能。詳細はバックエンド側で判定)。
+  Future<void> removeMember(String userId) async {
+    final group = state.group;
+    if (group == null) return;
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      await _repository.removeMember(group.id, userId);
+      state = state.copyWith(isLoading: false);
+      await refreshLocations();
+    } on Exception catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  /// 自分自身をグループから脱退させる。成功したら「グループ未参加」状態に戻す
+  /// (オーナー自身はバックエンド側で脱退不可としているため、この操作はオーナー以外向け)。
+  Future<void> leaveGroup(String selfUserId) async {
+    final group = state.group;
+    if (group == null) return;
+    state = state.copyWith(isLoading: true, errorMessage: null);
+    try {
+      await _repository.removeMember(group.id, selfUserId);
+      state = const LocationSharingState();
+    } on Exception catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
 }
 
 final locationSharingProvider =

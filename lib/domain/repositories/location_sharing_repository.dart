@@ -14,4 +14,8 @@ abstract interface class LocationSharingRepository {
 
   /// groupIdで指定したグループの各メンバーの直近1件の位置情報を取得する(ポーリング用)。
   Future<List<MemberLocation>> pollLocations(String groupId);
+
+  /// userIdに自分自身を指定するとグループから脱退、オーナーが他人を指定すると
+  /// そのメンバーを削除する。
+  Future<void> removeMember(String groupId, String userId);
 }

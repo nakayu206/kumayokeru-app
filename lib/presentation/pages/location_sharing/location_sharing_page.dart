@@ -174,6 +174,9 @@ class _AuthenticatedLocationSharingViewState
     LocationSharingState state,
     LocationSharingNotifier notifier,
   ) {
+    final selfUserId = ref.read(authProvider).user!.id;
+    final isOwner = state.group!.ownerUserId == selfUserId;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -205,7 +208,18 @@ class _AuthenticatedLocationSharingViewState
               : ListView(
                   children: [
                     for (final location in state.memberLocations)
-                      _MemberLocationTile(location: location),
+                      _MemberLocationTile(
+                        location: location,
+                        // オーナーは自分以外を削除できる(自分自身の脱退は下部の
+                        // 「グループを脱退する」ボタンから。オーナーは脱退不可)。
+                        onRemove: isOwner && location.userId != selfUserId
+                            ? () => _showRemoveMemberDialog(
+                                context,
+                                notifier,
+                                location,
+                              )
+                            : null,
+                      ),
                   ],
                 ),
         ),
@@ -234,6 +248,23 @@ class _AuthenticatedLocationSharingViewState
             ),
           ),
         ),
+        if (!isOwner) ...[
+          const SizedBox(height: AppSpacing.sm),
+          OutlinedButton.icon(
+            onPressed: () =>
+                _showLeaveGroupDialog(context, notifier, selfUserId),
+            icon: const Icon(Icons.logout),
+            label: const Text('グループを脱退する'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+              foregroundColor: AppColors.danger,
+              side: BorderSide(color: AppColors.danger),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpacing.lg),
         SizedBox(
           width: double.infinity,
@@ -253,6 +284,64 @@ class _AuthenticatedLocationSharingViewState
         ),
       ],
     );
+  }
+
+  Future<void> _showRemoveMemberDialog(
+    BuildContext context,
+    LocationSharingNotifier notifier,
+    MemberLocation location,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('メンバーを削除しますか?'),
+        content: Text('${location.email} をグループから削除します。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('削除する'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed ?? false) {
+      await notifier.removeMember(location.userId);
+    }
+  }
+
+  Future<void> _showLeaveGroupDialog(
+    BuildContext context,
+    LocationSharingNotifier notifier,
+    String selfUserId,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('グループを脱退しますか?'),
+        content: const Text('脱退すると、他のメンバーとの位置情報共有が停止します。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('脱退する'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed ?? false) {
+      await notifier.leaveGroup(selfUserId);
+    }
   }
 
   Future<void> _showInviteDialog(
@@ -435,9 +524,12 @@ class _PoorSignalNotice extends StatelessWidget {
 }
 
 class _MemberLocationTile extends StatelessWidget {
-  const _MemberLocationTile({required this.location});
+  const _MemberLocationTile({required this.location, this.onRemove});
 
   final MemberLocation location;
+
+  /// nullなら削除ボタンを表示しない(オーナー以外・自分自身には出さない)。
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -446,6 +538,13 @@ class _MemberLocationTile extends StatelessWidget {
         leading: const Icon(Icons.person, color: AppColors.primary),
         title: Text(location.email),
         subtitle: Text('最終更新 ${_formatTime(location.recordedAt)}'),
+        trailing: onRemove == null
+            ? null
+            : IconButton(
+                icon: Icon(Icons.person_remove, color: AppColors.danger),
+                tooltip: 'メンバーを削除',
+                onPressed: onRemove,
+              ),
       ),
     );
   }

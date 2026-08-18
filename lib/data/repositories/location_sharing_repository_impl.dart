@@ -51,6 +51,12 @@ class LocationSharingRepositoryImpl implements LocationSharingRepository {
     return json.map((e) => MemberLocationModel.fromJson(e).toEntity()).toList();
   }
 
+  @override
+  Future<void> removeMember(String groupId, String userId) async {
+    final token = await _requireToken();
+    await _remoteDataSource.removeMember(token, groupId, userId);
+  }
+
   Future<String> _requireToken() async {
     final token = await _tokenLocalDataSource.readToken();
     if (token == null) {
