@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:kumayokeru_app/core/constants/app_colors.dart';
 import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
+import 'package:kumayokeru_app/domain/entities/group_member.dart';
 import 'package:kumayokeru_app/domain/entities/member_location.dart';
 import 'package:kumayokeru_app/presentation/pages/auth/login_page.dart';
 import 'package:kumayokeru_app/presentation/pages/settings/privacy_settings_page.dart';
@@ -198,25 +199,28 @@ class _AuthenticatedLocationSharingViewState
         ),
         const SizedBox(height: AppSpacing.sm),
         Expanded(
-          child: state.memberLocations.isEmpty
+          child: state.members.isEmpty
               ? Center(
                   child: Text(
-                    'まだ共有された位置情報がありません',
+                    'まだメンバーがいません',
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                 )
               : ListView(
                   children: [
-                    for (final location in state.memberLocations)
-                      _MemberLocationTile(
-                        location: location,
+                    for (final member in state.members)
+                      _MemberTile(
+                        member: member,
+                        location: state.memberLocations
+                            .where((l) => l.userId == member.userId)
+                            .firstOrNull,
                         // オーナーは自分以外を削除できる(自分自身の脱退は下部の
                         // 「グループを脱退する」ボタンから。オーナーは脱退不可)。
-                        onRemove: isOwner && location.userId != selfUserId
+                        onRemove: isOwner && member.userId != selfUserId
                             ? () => _showRemoveMemberDialog(
                                 context,
                                 notifier,
-                                location,
+                                member,
                               )
                             : null,
                       ),
@@ -289,13 +293,13 @@ class _AuthenticatedLocationSharingViewState
   Future<void> _showRemoveMemberDialog(
     BuildContext context,
     LocationSharingNotifier notifier,
-    MemberLocation location,
+    GroupMember member,
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('メンバーを削除しますか?'),
-        content: Text('${location.email} をグループから削除します。'),
+        content: Text('${member.email} をグループから削除します。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -311,7 +315,7 @@ class _AuthenticatedLocationSharingViewState
     );
 
     if (confirmed ?? false) {
-      await notifier.removeMember(location.userId);
+      await notifier.removeMember(member.userId);
     }
   }
 
@@ -523,21 +527,30 @@ class _PoorSignalNotice extends StatelessWidget {
   }
 }
 
-class _MemberLocationTile extends StatelessWidget {
-  const _MemberLocationTile({required this.location, this.onRemove});
+class _MemberTile extends StatelessWidget {
+  const _MemberTile({required this.member, this.location, this.onRemove});
 
-  final MemberLocation location;
+  final GroupMember member;
+
+  /// nullなら「まだ位置情報が共有されていません」を表示する
+  /// (招待直後などでまだ一度も位置情報を送信していないメンバー)。
+  final MemberLocation? location;
 
   /// nullなら削除ボタンを表示しない(オーナー以外・自分自身には出さない)。
   final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
+    final location = this.location;
     return Card(
       child: ListTile(
         leading: const Icon(Icons.person, color: AppColors.primary),
-        title: Text(location.email),
-        subtitle: Text('最終更新 ${_formatTime(location.recordedAt)}'),
+        title: Text(member.email),
+        subtitle: Text(
+          location == null
+              ? 'まだ位置情報が共有されていません'
+              : '最終更新 ${_formatTime(location.recordedAt)}',
+        ),
         trailing: onRemove == null
             ? null
             : IconButton(

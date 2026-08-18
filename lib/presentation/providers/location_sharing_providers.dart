@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:kumayokeru_app/data/repositories/location_sharing_repository_impl.dart';
+import 'package:kumayokeru_app/domain/entities/group_member.dart';
 import 'package:kumayokeru_app/domain/entities/member_location.dart';
 import 'package:kumayokeru_app/domain/entities/share_group.dart';
 import 'package:kumayokeru_app/domain/repositories/location_sharing_repository.dart';
@@ -14,24 +15,32 @@ class LocationSharingState {
   const LocationSharingState({
     this.isLoading = false,
     this.group,
+    this.members = const [],
     this.memberLocations = const [],
     this.errorMessage,
   });
 
   final bool isLoading;
   final ShareGroup? group;
+
+  /// 招待済み全メンバー(位置情報を一度も送っていないメンバーも含む)。
+  final List<GroupMember> members;
+
+  /// 直近の位置情報を送信済みのメンバーのみ(表示上の「最終更新」に使う)。
   final List<MemberLocation> memberLocations;
   final String? errorMessage;
 
   LocationSharingState copyWith({
     bool? isLoading,
     ShareGroup? group,
+    List<GroupMember>? members,
     List<MemberLocation>? memberLocations,
     String? errorMessage,
   }) {
     return LocationSharingState(
       isLoading: isLoading ?? this.isLoading,
       group: group ?? this.group,
+      members: members ?? this.members,
       memberLocations: memberLocations ?? this.memberLocations,
       errorMessage: errorMessage,
     );
@@ -66,6 +75,7 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
     try {
       final group = await _repository.createGroup(name);
       state = state.copyWith(isLoading: false, group: group);
+      await refreshLocations();
     } on Exception catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
@@ -94,12 +104,19 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
     }
   }
 
+  /// メンバー一覧(招待済み全員)と、各メンバーの直近の位置情報を両方取得し直す。
   Future<void> refreshLocations() async {
     final group = state.group;
     if (group == null) return;
     try {
-      final locations = await _repository.pollLocations(group.id);
-      state = state.copyWith(memberLocations: locations);
+      final results = await Future.wait([
+        _repository.listMembers(group.id),
+        _repository.pollLocations(group.id),
+      ]);
+      state = state.copyWith(
+        members: results[0] as List<GroupMember>,
+        memberLocations: results[1] as List<MemberLocation>,
+      );
     } on Exception catch (e) {
       state = state.copyWith(errorMessage: e.toString());
     }
