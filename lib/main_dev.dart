@@ -10,6 +10,7 @@ import 'package:kumayokeru_app/presentation/providers/presence_notification_prov
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   AppConfig.setFlavor(Flavor.dev);
+  await initFirebase();
   final presenceNotificationHandler =
       await initPresenceNotificationAudioHandler();
   runApp(

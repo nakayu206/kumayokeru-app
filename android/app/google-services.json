@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "126846012081",
+    "project_id": "kumayokeru",
+    "storage_bucket": "kumayokeru.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:126846012081:android:8b8a43a2d18114dbbb7090",
+        "android_client_info": {
+          "package_name": "com.kumayokeru.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBr4asbingKYsVJxhESLmlg6ms6SCsohNs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

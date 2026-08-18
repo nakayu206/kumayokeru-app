@@ -15,6 +15,9 @@ class _FakeRemoteDataSource extends LocationSharingRemoteDataSource {
   String? capturedToken;
   String? removedGroupId;
   String? removedUserId;
+  String? sosGroupId;
+  double? sosLat;
+  double? sosLng;
 
   @override
   Future<List<Map<String, dynamic>>> listGroups(String token) async {
@@ -38,6 +41,19 @@ class _FakeRemoteDataSource extends LocationSharingRemoteDataSource {
     capturedToken = token;
     removedGroupId = groupId;
     removedUserId = userId;
+  }
+
+  @override
+  Future<void> sendSos(
+    String token,
+    String groupId, {
+    required double lat,
+    required double lng,
+  }) async {
+    capturedToken = token;
+    sosGroupId = groupId;
+    sosLat = lat;
+    sosLng = lng;
   }
 
   @override
@@ -82,6 +98,21 @@ void main() {
       expect(remote.capturedToken, 'fake-token');
       expect(groups, hasLength(1));
       expect(groups.first.name, '家族グループ');
+    });
+
+    test('sendSos()はトークンを付けてリモートのsendSosを呼び出す', () async {
+      final remote = _FakeRemoteDataSource();
+      final repository = LocationSharingRepositoryImpl(
+        remoteDataSource: remote,
+        tokenLocalDataSource: _FakeTokenLocalDataSource()..token = 'fake-token',
+      );
+
+      await repository.sendSos(groupId: 'group-1', lat: 35.0, lng: 139.0);
+
+      expect(remote.capturedToken, 'fake-token');
+      expect(remote.sosGroupId, 'group-1');
+      expect(remote.sosLat, 35.0);
+      expect(remote.sosLng, 139.0);
     });
 
     test('removeMember()はトークンを付けてリモートのremoveMemberを呼び出す', () async {

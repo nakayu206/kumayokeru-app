@@ -104,6 +104,19 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
     }
   }
 
+  /// 緊急連絡(SOS)。現在地を送信し、自分以外の全メンバーへプッシュ通知する。
+  Future<void> sendSos(double lat, double lng) async {
+    final group = state.group;
+    if (group == null) return;
+    state = state.copyWith(errorMessage: null);
+    try {
+      await _repository.sendSos(groupId: group.id, lat: lat, lng: lng);
+      await refreshLocations();
+    } on Exception catch (e) {
+      state = state.copyWith(errorMessage: e.toString());
+    }
+  }
+
   /// メンバー一覧(招待済み全員)と、各メンバーの直近の位置情報を両方取得し直す。
   Future<void> refreshLocations() async {
     final group = state.group;

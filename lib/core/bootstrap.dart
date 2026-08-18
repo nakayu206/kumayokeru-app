@@ -1,4 +1,6 @@
 import 'package:audio_service/audio_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:kumayokeru_app/infrastructure/notification_sound_player.dart';
 import 'package:kumayokeru_app/infrastructure/presence_notification_audio_handler.dart';
@@ -27,4 +29,17 @@ initPresenceNotificationAudioHandler() async {
       androidNotificationChannelDescription: '登山中に存在通知音を再生していることを示す通知です',
     ),
   );
+}
+
+/// Firebase(プッシュ通知/FCM)を初期化する。
+///
+/// google-services.json(Android)にapplicationIdと一致するクライアント設定が無い場合や、
+/// iOS(GoogleService-Info.plist未配置。iOSはAPNs直接接続方針のため対象外)では失敗するが、
+/// プッシュ通知が使えないだけでアプリ自体は問題なく動作させたいため、ここで例外を吸収する。
+Future<void> initFirebase() async {
+  try {
+    await Firebase.initializeApp();
+  } on Exception catch (e) {
+    debugPrint('Firebase初期化に失敗しました(プッシュ通知は利用できません): $e');
+  }
 }

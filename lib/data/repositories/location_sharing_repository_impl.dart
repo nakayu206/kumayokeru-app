@@ -47,6 +47,16 @@ class LocationSharingRepositoryImpl implements LocationSharingRepository {
   }
 
   @override
+  Future<void> sendSos({
+    required String groupId,
+    required double lat,
+    required double lng,
+  }) async {
+    final token = await _requireToken();
+    await _remoteDataSource.sendSos(token, groupId, lat: lat, lng: lng);
+  }
+
+  @override
   Future<List<MemberLocation>> pollLocations(String groupId) async {
     final token = await _requireToken();
     final json = await _remoteDataSource.pollLocations(token, groupId);

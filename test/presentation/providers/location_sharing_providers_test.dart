@@ -13,6 +13,9 @@ class _FakeLocationSharingRepository implements LocationSharingRepository {
   List<MemberLocation> memberLocations = [];
   String? removedGroupId;
   String? removedUserId;
+  String? sosGroupId;
+  double? sosLat;
+  double? sosLng;
 
   @override
   Future<List<ShareGroup>> listGroups() async => groups;
@@ -30,6 +33,17 @@ class _FakeLocationSharingRepository implements LocationSharingRepository {
   @override
   Future<void> postLocation({required double lat, required double lng}) async {
     throw UnimplementedError();
+  }
+
+  @override
+  Future<void> sendSos({
+    required String groupId,
+    required double lat,
+    required double lng,
+  }) async {
+    sosGroupId = groupId;
+    sosLat = lat;
+    sosLng = lng;
   }
 
   @override
@@ -82,6 +96,29 @@ void main() {
       email: 'member@example.com',
       joinedAt: DateTime(2026, 7, 25),
     );
+
+    test('sendSos()でリポジトリのsendSosが呼ばれ、一覧が更新される', () async {
+      final fakeRepository = _FakeLocationSharingRepository()
+        ..groups = [group]
+        ..members = [ownerMember]
+        ..memberLocations = [ownerLocation];
+      final container = ProviderContainer(
+        overrides: [
+          locationSharingRepositoryProvider.overrideWithValue(fakeRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.read(locationSharingProvider);
+      await pumpEventQueue();
+
+      await container
+          .read(locationSharingProvider.notifier)
+          .sendSos(35.5, 139.5);
+
+      expect(fakeRepository.sosGroupId, 'group-1');
+      expect(fakeRepository.sosLat, 35.5);
+      expect(fakeRepository.sosLng, 139.5);
+    });
 
     test('refreshLocations()はメンバー一覧と位置情報の両方を取得する(位置未共有のメンバーも含む)', () async {
       final fakeRepository = _FakeLocationSharingRepository()
