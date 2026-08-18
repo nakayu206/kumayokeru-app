@@ -16,24 +16,13 @@ import 'package:kumayokeru_app/presentation/providers/sighting_providers.dart';
 import 'package:kumayokeru_app/presentation/widgets/common/error_dialog.dart';
 import 'package:kumayokeru_app/presentation/widgets/common/error_text.dart';
 
-/// クマの足跡マークの色。自治体公式データは濃い茶色、ユーザー投稿は薄い茶色で
-/// 区別する(デザイントークン: 出没情報ピンは自治体公式データとユーザー投稿を
-/// 色・アイコンで明確に区別する方針)。
+/// 自治体公式データは濃い茶色、ユーザー投稿は薄い茶色。
 Color _sightingColor(SightingSourceType sourceType) {
   return sourceType == SightingSourceType.official
       ? const Color(0xFF6D4C29)
       : const Color(0xFFB08968);
 }
 
-/// 出没情報マップ画面(仕様書セクション12 ②)。
-///
-/// kumayokeru-backend(https://57-182-248-130.sslip.io)の`GET /sightings`から取得した実データを表示する。
-/// 目撃情報の投稿(`POST /sightings`)は認証不要で誰でも可能。
-/// 現在地はgeolocatorで取得でき次第、地図の中心とマーカーに反映する
-/// (取得できるまで/失敗時はデフォルト座標を表示)。
-/// 現在地が分かっている場合、一覧は現在地から近い順に並び替える。
-/// 地域名・状況テキストでの検索、一覧タップでの地図フォーカスにも対応。
-/// 地図右下の現在地ボタンで、最新の現在地を取り直して地図を戻せる。
 class SightingMapPage extends ConsumerStatefulWidget {
   const SightingMapPage({super.key});
 
@@ -233,8 +222,7 @@ class _SightingMapPageState extends ConsumerState<SightingMapPage> {
     );
   }
 
-  /// ボタン押下時点の最新の現在地を取り直してから地図を移動する
-  /// (initialCenterは初回表示時点の値のまま更新されないため)。
+  /// 最新の現在地を取り直してから地図を移動する。
   Future<void> _recenterToCurrentLocation(BuildContext context) async {
     final position = await ref.refresh(currentPositionProvider.future);
     if (!context.mounted) return;

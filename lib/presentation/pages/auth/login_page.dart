@@ -8,15 +8,7 @@ import 'package:kumayokeru_app/presentation/providers/auth_providers.dart';
 import 'package:kumayokeru_app/presentation/widgets/common/error_dialog.dart';
 import 'package:kumayokeru_app/presentation/widgets/common/error_text.dart';
 
-/// ログイン/新規登録画面。
-///
-/// TekuShareのEmailAuthPageと同じメール+パスワード認証フローを踏襲する。
-/// kumayokeru-backend(JWT + bcrypt、#15)と結合済み。バックエンドはsignup時に
-/// メール確認を行わないため、新規登録に成功したら続けて自動でログインする。
-///
-/// エラー表示の使い分け(アプリ共通の方針):
-/// - 入力バリデーション(未入力・形式不正等): 画面内に赤文字で表示([ErrorText])
-/// - 通信・認証エラー(kumayokeru-backendからのエラー応答等): ダイアログで表示([showErrorDialog])
+/// 入力バリデーションは[ErrorText]、通信・認証エラーは[showErrorDialog]で表示。
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 

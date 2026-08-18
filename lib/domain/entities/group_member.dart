@@ -1,7 +1,4 @@
-/// 位置情報共有グループのメンバー(`GET /groups/:groupId/members`)。
-///
-/// [MemberLocation]と違い、まだ一度も位置情報を送信していないメンバー
-/// (招待直後など)も含めた「招待済み全員」を表す。
+/// [MemberLocation]と違い、位置未送信のメンバーも含む招待済み全員。
 class GroupMember {
   const GroupMember({
     required this.userId,

@@ -25,11 +25,7 @@ class OfflineMapException implements Exception {
   String toString() => message;
 }
 
-/// 地図タイルのローカルキャッシュを扱うサービス。
-///
-/// flutter_map_tile_caching(GPL v3)を使わず自前実装したもの。
-/// タイルはズームレベル(z)・タイルX・タイルYごとにファイルとして保存し、
-/// キャッシュに無ければネットワークから取得して保存する。
+/// 地図タイルのローカルキャッシュ(flutter_map_tile_cachingはGPL v3のため自前実装)。
 abstract interface class OfflineMapService {
   /// 1タイルを取得する。キャッシュにあればそれを返し、無ければ[url]から取得してキャッシュする。
   Future<Uint8List> loadTile({
@@ -61,9 +57,7 @@ abstract interface class OfflineMapService {
 }
 
 class FileOfflineMapService implements OfflineMapService {
-  /// [baseDirectory]を指定すると、そのディレクトリ配下にタイルを保存する
-  /// (テストで一時ディレクトリに差し替えるために使用)。省略時はpath_providerの
-  /// アプリケーションサポートディレクトリを使う。
+  /// [baseDirectory]省略時はpath_providerのアプリケーションサポートディレクトリを使う。
   FileOfflineMapService({http.Client? httpClient, Directory? baseDirectory})
     : _httpClient = httpClient ?? http.Client(),
       _baseDirectory = baseDirectory;

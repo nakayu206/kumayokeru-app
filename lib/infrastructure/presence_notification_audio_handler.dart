@@ -7,10 +7,7 @@ import 'package:kumayokeru_app/domain/entities/notification_settings.dart';
 import 'package:kumayokeru_app/infrastructure/notification_sound_player.dart';
 import 'package:kumayokeru_app/infrastructure/self_check_notification_service.dart';
 
-/// 存在通知機能のUI(Riverpod)側から見た操作インターフェース。
-///
-/// [PresenceNotificationAudioHandler]の実装をテストダブルに差し替えられるように、
-/// audio_service非依存の薄いインターフェースとして切り出したもの。
+/// テストダブルに差し替えられるよう、audio_service非依存で切り出したインターフェース。
 abstract interface class PresenceNotificationController {
   Stream<bool> get isNotifyingStream;
   Stream<int> get secondsUntilNextPlayStream;
@@ -22,13 +19,7 @@ abstract interface class PresenceNotificationController {
   Future<void> playNow();
 }
 
-/// 存在通知機能の再生ループ(Timer.periodic)を保持するAudioHandler。
-///
-/// Android/iOSでアプリがバックグラウンドに回っても再生を継続させるため、
-/// 周期実行のロジックをUI(Riverpod)側ではなくこのハンドラ側に置く
-/// (audio_serviceがAndroidのフォアグラウンドサービス化・iOSの
-/// UIBackgroundModes(audio)有効化を担う)。UI側は[isNotifyingStream]/
-/// [secondsUntilNextPlayStream]を購読するだけの薄いアダプタとする。
+/// バックグラウンドでも再生を継続させるため、周期実行はUI側でなくここに置く。
 class PresenceNotificationAudioHandler extends BaseAudioHandler
     implements PresenceNotificationController {
   PresenceNotificationAudioHandler(this._player, this._selfCheck);
@@ -79,9 +70,6 @@ class PresenceNotificationAudioHandler extends BaseAudioHandler
       ),
     );
 
-    // 無音ループの開始(iOSのバックグラウンド継続用の補助策)は失敗/ハングしても
-    // 再生ループ・セルフチェック通知(こちらが本質的な機能)を止めてはならないため、
-    // タイムアウトを設けてベストエフォートで扱う。
     await _startKeepAliveLoopBestEffort();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
     unawaited(_scheduleSelfCheck());
@@ -131,9 +119,7 @@ class PresenceNotificationAudioHandler extends BaseAudioHandler
     _secondsUntilNextPlayController.add(_secondsUntilNextPlay);
   }
 
-  /// 「次のtickが来るまでの見込み時間+猶予」だけ先にセルフチェック通知を予約する。
-  /// 再生が正常に続く限り毎tickごとにこれで上書きされ続けるため、実際には
-  /// 通知は出ない。再生ループが止まった場合だけ、予約済みの通知がそのまま発火する。
+  /// 再生ループが止まった場合だけ、予約済みの通知がそのまま発火する。
   Future<void> _scheduleSelfCheck() {
     return _selfCheck.scheduleCheck(
       Duration(

@@ -15,9 +15,6 @@ import 'package:kumayokeru_app/presentation/providers/location_sharing_providers
 import 'package:kumayokeru_app/presentation/providers/settings_providers.dart';
 import 'package:kumayokeru_app/presentation/widgets/common/error_dialog.dart';
 
-/// 仲間・家族への位置情報共有画面(仕様書セクション12 ③)。
-///
-/// kumayokeru-backend(POST /locations + ポーリング取得、#12)と結合済み。
 class LocationSharingPage extends ConsumerWidget {
   const LocationSharingPage({super.key});
 
@@ -214,8 +211,7 @@ class _AuthenticatedLocationSharingViewState
                         location: state.memberLocations
                             .where((l) => l.userId == member.userId)
                             .firstOrNull,
-                        // オーナーは自分以外を削除できる(自分自身の脱退は下部の
-                        // 「グループを脱退する」ボタンから。オーナーは脱退不可)。
+                        // オーナーのみ、自分以外を削除できる
                         onRemove: isOwner && member.userId != selfUserId
                             ? () => _showRemoveMemberDialog(
                                 context,
@@ -410,8 +406,7 @@ class _AuthenticatedLocationSharingViewState
 
     if (phoneNumber == null) return;
 
-    // 電話発信は通信状況に関わらず必ず試みるため、位置共有(失敗しうる)とは
-    // 独立して扱う。位置共有側のエラーは_sendSosLocation内で表示済み。
+    // 電話発信は位置共有の成否に関わらず必ず試みる
     await _sendSosLocation(notifier);
 
     final uri = Uri(scheme: 'tel', path: phoneNumber);
@@ -440,9 +435,7 @@ class _AuthenticatedLocationSharingViewState
     await notifier.shareCurrentLocation(position.latitude, position.longitude);
   }
 
-  /// 緊急連絡(SOS)専用。位置情報共有のオプトイン同意([[プライバシー設定]])の
-  /// 対象外とし、押した本人の明示的な意思表示として常に現在地を送信する
-  /// (プライバシー設定画面にもその旨を明記している)。
+  /// SOSはプライバシー設定の同意対象外(常に送信する)。
   Future<void> _sendSosLocation(LocationSharingNotifier notifier) async {
     final position = await _getCurrentPosition();
     if (position == null) return;
@@ -503,7 +496,6 @@ class _AuthenticatedLocationSharingViewState
   }
 }
 
-/// 山では電波が届きにくく、この機能が期待通りに動かないことがある旨の注意書き。
 class _PoorSignalNotice extends StatelessWidget {
   const _PoorSignalNotice();
 
@@ -546,8 +538,7 @@ class _MemberTile extends StatelessWidget {
 
   final GroupMember member;
 
-  /// nullなら「まだ位置情報が共有されていません」を表示する
-  /// (招待直後などでまだ一度も位置情報を送信していないメンバー)。
+  /// nullなら「まだ位置情報が共有されていません」を表示する。
   final MemberLocation? location;
 
   /// nullなら削除ボタンを表示しない(オーナー以外・自分自身には出さない)。

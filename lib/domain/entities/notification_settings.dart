@@ -3,7 +3,6 @@ import 'package:kumayokeru_app/core/constants/map_constants.dart';
 /// 存在通知機能の音源。
 enum NotificationSoundType { bell, voice, mixed }
 
-/// 存在通知機能の設定値(仕様書セクション12 ④・セクション15)。
 class NotificationSettings {
   const NotificationSettings({
     this.intervalSec = AudioConstants.defaultIntervalSec,

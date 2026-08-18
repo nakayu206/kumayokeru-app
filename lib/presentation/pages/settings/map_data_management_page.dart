@@ -12,11 +12,6 @@ import 'package:kumayokeru_app/presentation/providers/current_position_provider.
 import 'package:kumayokeru_app/presentation/providers/offline_map_providers.dart';
 import 'package:kumayokeru_app/presentation/widgets/common/error_dialog.dart';
 
-/// 地図データ管理画面。
-///
-/// 現在地周辺(半径[MapConstants.offlineDownloadRadiusKm]km)の地図タイルを
-/// 事前ダウンロードし、電波の届かない山中でもオフライン閲覧できるようにする。
-/// flutter_map_tile_caching(GPL v3)を使わず自前実装した[OfflineMapService]を利用する。
 class MapDataManagementPage extends ConsumerStatefulWidget {
   const MapDataManagementPage({super.key});
 

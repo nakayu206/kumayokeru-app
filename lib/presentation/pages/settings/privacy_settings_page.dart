@@ -6,11 +6,7 @@ import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 import 'package:kumayokeru_app/presentation/providers/settings_providers.dart';
 
-/// 位置情報共有のオプトイン同意・管理画面(仕様書セクション6 セキュリティ・プライバシー)。
-///
-/// ここでの同意(location_sharing_consent_given)がfalseの間は、
-/// LocationSharingPageで「現在地を共有する」を押しても送信されない
-/// (SOS/緊急連絡は、その場で押した本人の明示的な意思表示のため対象外)。
+/// 同意falseの間は現在地共有ボタンが送信をブロックする(SOSは対象外)。
 class PrivacySettingsPage extends ConsumerWidget {
   const PrivacySettingsPage({super.key});
 

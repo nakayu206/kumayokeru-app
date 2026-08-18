@@ -12,11 +12,7 @@ class GeocodingApiException implements Exception {
   String toString() => message;
 }
 
-/// OpenStreetMapのNominatim逆ジオコーディングAPIを呼び出すデータソース。
-/// APIキー不要・無料。https://nominatim.org/release-docs/latest/api/Reverse/
-///
-/// 利用ポリシー上、User-Agentの明示とリクエスト頻度(1秒に1回程度まで)の
-/// 節度が求められるため、頻繁な連続呼び出しはしないこと。
+/// Nominatim利用ポリシー上、頻繁な連続呼び出しはしないこと。
 class GeocodingRemoteDataSource {
   GeocodingRemoteDataSource({http.Client? client, Uri? baseUrl})
     : _client = client ?? http.Client(),

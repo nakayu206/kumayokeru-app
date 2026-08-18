@@ -2,14 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
-/// 存在通知機能が停止していないかのセルフチェック通知を扱うサービス。
-///
-/// [scheduleCheck]で「delay後に警告通知を出す」予約を行い、再生ループが
-/// 正常に動いている間は([PresenceNotificationAudioHandler]が)tickのたびに
-/// 予約をキャンセル→再予約し続けることで、通知が実際に出ないようにする。
-/// アプリのプロセスが(OSに強制終了される等で)死んでも、この予約はOS側の
-/// アラームとして残るため、再生が止まったことにユーザーが気づける
-/// (いわゆるデッドマンスイッチ)。
+/// デッドマンスイッチ方式: tickのたびに予約を再予約し、止まったら発火する。
 abstract interface class SelfCheckNotificationService {
   Future<void> initialize();
 

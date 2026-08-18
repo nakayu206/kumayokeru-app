@@ -1,20 +1,13 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-/// プッシュ通知(FCM)の権限リクエスト・トークン取得・フォアグラウンド表示を抽象化する
-/// (テストでは実際のFirebaseに繋がずフェイク実装に差し替える)。
+/// テストでは実際のFirebaseに繋がずフェイク実装に差し替える。
 abstract interface class PushNotificationService {
-  /// 通知権限をリクエストし、取得できたFCMトークンを[onToken]に渡す。
-  /// トークンが更新された場合(onTokenRefresh)も同じコールバックが呼ばれる。
-  /// また、フォアグラウンド受信時にOS標準の通知として表示する処理も開始する。
+  /// 権限リクエスト・トークン取得(更新時も同じコールバック)・フォアグラウンド表示を行う。
   Future<void> initialize({required Future<void> Function(String token) onToken});
 }
 
-/// firebase_messagingによる実装。
-///
-/// フォアグラウンド中に受信したプッシュ通知は、OSの仕様上デフォルトでは
-/// 通知欄に表示されない(バックグラウンド/終了中はOSが自動表示する)ため、
-/// flutter_local_notificationsで手動表示する。
+/// フォアグラウンド受信はOSが自動表示しないため、flutter_local_notificationsで手動表示する。
 class FirebaseCloudMessagingService implements PushNotificationService {
   FirebaseCloudMessagingService({
     FirebaseMessaging? messaging,

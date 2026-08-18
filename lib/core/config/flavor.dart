@@ -1,10 +1,7 @@
 /// アプリの実行環境。
 enum Flavor { dev, stg, prod }
 
-/// 現在のFlavorとFlavor別設定を保持するグローバル設定。
-///
-/// `main_dev.dart` / `main_stg.dart` / `main_prod.dart` が起動時に
-/// [setFlavor] を呼んで確定させる。
+/// main_dev/stg/prod.dartが起動時にsetFlavor()で確定させる。
 class AppConfig {
   AppConfig._();
 

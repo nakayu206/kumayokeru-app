@@ -6,10 +6,6 @@ import 'package:flutter_map/flutter_map.dart';
 
 import 'package:kumayokeru_app/infrastructure/offline_map_service.dart';
 
-/// キャッシュ済みタイルがあればそれを、無ければネットワークから取得して
-/// キャッシュに保存する[TileProvider]。
-///
-/// flutter_map_tile_caching(GPL v3)の代替として自前実装したもの。
 class OfflineFirstTileProvider extends TileProvider {
   OfflineFirstTileProvider(this._service, {super.headers});
 
