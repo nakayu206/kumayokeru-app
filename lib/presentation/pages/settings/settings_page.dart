@@ -7,6 +7,7 @@ import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 import 'package:kumayokeru_app/domain/entities/notification_settings.dart';
 import 'package:kumayokeru_app/presentation/pages/auth/login_page.dart';
 import 'package:kumayokeru_app/presentation/pages/settings/map_data_management_page.dart';
+import 'package:kumayokeru_app/presentation/pages/settings/privacy_settings_page.dart';
 import 'package:kumayokeru_app/presentation/providers/auth_providers.dart';
 import 'package:kumayokeru_app/presentation/providers/settings_providers.dart';
 
@@ -125,16 +126,18 @@ class SettingsPage extends ConsumerWidget {
               MaterialPageRoute(builder: (_) => const MapDataManagementPage()),
             ),
           ),
-          // プライバシーポリシー・免責事項は正式リリース(Phase 3)前に専門家の
-          // レビューを経て文言を確定させる方針(docs/全体設計書.md参照)のため、
-          // ここでは「準備中」であることを明示し、タップしても壊れて見えないようにする。
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('プライバシー設定'),
-            subtitle: const Text('準備中'),
-            enabled: false,
+            subtitle: const Text('位置情報共有のON/OFFを管理'),
             trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PrivacySettingsPage()),
+            ),
           ),
+          // プライバシーポリシー・免責事項は正式リリース(Phase 3)前に専門家の
+          // レビューを経て文言を確定させる方針(docs/全体設計書.md参照)のため、
+          // ここでは「準備中」であることを明示し、タップしても壊れて見えないようにする。
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('免責事項を確認する'),

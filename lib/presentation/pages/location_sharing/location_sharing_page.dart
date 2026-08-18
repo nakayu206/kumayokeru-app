@@ -8,8 +8,10 @@ import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 import 'package:kumayokeru_app/domain/entities/member_location.dart';
 import 'package:kumayokeru_app/presentation/pages/auth/login_page.dart';
+import 'package:kumayokeru_app/presentation/pages/settings/privacy_settings_page.dart';
 import 'package:kumayokeru_app/presentation/providers/auth_providers.dart';
 import 'package:kumayokeru_app/presentation/providers/location_sharing_providers.dart';
+import 'package:kumayokeru_app/presentation/providers/settings_providers.dart';
 import 'package:kumayokeru_app/presentation/widgets/common/error_dialog.dart';
 
 /// 仲間・家族への位置情報共有画面(仕様書セクション12 ③)。
@@ -331,6 +333,14 @@ class _AuthenticatedLocationSharingViewState
   }
 
   Future<void> _shareCurrentLocation(LocationSharingNotifier notifier) async {
+    final consentGiven = ref.read(
+      privacySettingsProvider.select((s) => s.locationSharingConsentGiven),
+    );
+    if (!consentGiven) {
+      await _showConsentRequiredDialog();
+      return;
+    }
+
     try {
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -352,6 +362,37 @@ class _AuthenticatedLocationSharingViewState
     } on Exception catch (e) {
       if (mounted) showErrorDialog(context, '現在地の取得に失敗しました: $e');
     }
+  }
+
+  Future<void> _showConsentRequiredDialog() async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('位置情報の共有が許可されていません'),
+        content: const Text(
+          '「現在地を共有する」を使うには、設定の「プライバシー設定」で位置情報共有を'
+          '許可してください。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('閉じる'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const PrivacySettingsPage(),
+                ),
+              );
+            },
+            child: const Text('プライバシー設定を開く'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
