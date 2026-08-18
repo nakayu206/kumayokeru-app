@@ -13,6 +13,14 @@ abstract interface class LocationSharingRepository {
 
   Future<void> postLocation({required double lat, required double lng});
 
+  /// 緊急連絡(SOS)。現在地を送信した上で、groupIdの自分以外の全メンバーに
+  /// プッシュ通知を送る(送達は保証しない。詳細はkumayokeru-backend参照)。
+  Future<void> sendSos({
+    required String groupId,
+    required double lat,
+    required double lng,
+  });
+
   /// groupIdで指定したグループの各メンバーの直近1件の位置情報を取得する(ポーリング用)。
   Future<List<MemberLocation>> pollLocations(String groupId);
 

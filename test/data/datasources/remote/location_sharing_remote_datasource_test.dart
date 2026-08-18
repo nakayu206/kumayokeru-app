@@ -64,6 +64,40 @@ void main() {
       expect(result['userId'], 'user-1');
     });
 
+    test('sendSos()はlat/lngをbodyに含めてPOST /groups/:groupId/sosを叩く', () async {
+      final mockClient = MockClient((request) async {
+        expect(request.method, 'POST');
+        expect(request.url.path, '/groups/group-1/sos');
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['lat'], 35.0);
+        expect(body['lng'], 139.0);
+        return _jsonResponse({
+          'userId': 'user-1',
+          'email': 'a@example.com',
+          'lat': 35.0,
+          'lng': 139.0,
+          'recordedAt': '2026-07-25T06:30:00+09:00',
+        }, 201);
+      });
+
+      final dataSource = LocationSharingRemoteDataSource(client: mockClient);
+
+      await dataSource.sendSos('fake-token', 'group-1', lat: 35.0, lng: 139.0);
+    });
+
+    test('sendSos()は201以外の応答でLocationSharingApiExceptionを投げる', () async {
+      final mockClient = MockClient((request) async {
+        return _jsonResponse({'error': 'このグループのメンバーではありません'}, 403);
+      });
+
+      final dataSource = LocationSharingRemoteDataSource(client: mockClient);
+
+      expect(
+        () => dataSource.sendSos('fake-token', 'group-1', lat: 35.0, lng: 139.0),
+        throwsA(isA<LocationSharingApiException>()),
+      );
+    });
+
     test('pollLocations()はgroupIdをクエリに含めてGET /locationsを叩く', () async {
       final mockClient = MockClient((request) async {
         expect(request.url.path, '/locations');

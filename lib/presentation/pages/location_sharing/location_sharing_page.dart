@@ -411,8 +411,8 @@ class _AuthenticatedLocationSharingViewState
     if (phoneNumber == null) return;
 
     // 電話発信は通信状況に関わらず必ず試みるため、位置共有(失敗しうる)とは
-    // 独立して扱う。位置共有側のエラーは_shareCurrentLocation内で表示済み。
-    await _shareCurrentLocation(notifier);
+    // 独立して扱う。位置共有側のエラーは_sendSosLocation内で表示済み。
+    await _sendSosLocation(notifier);
 
     final uri = Uri(scheme: 'tel', path: phoneNumber);
     final canLaunch = await canLaunchUrl(uri);
@@ -434,6 +434,23 @@ class _AuthenticatedLocationSharingViewState
       return;
     }
 
+    final position = await _getCurrentPosition();
+    if (position == null) return;
+
+    await notifier.shareCurrentLocation(position.latitude, position.longitude);
+  }
+
+  /// 緊急連絡(SOS)専用。位置情報共有のオプトイン同意([[プライバシー設定]])の
+  /// 対象外とし、押した本人の明示的な意思表示として常に現在地を送信する
+  /// (プライバシー設定画面にもその旨を明記している)。
+  Future<void> _sendSosLocation(LocationSharingNotifier notifier) async {
+    final position = await _getCurrentPosition();
+    if (position == null) return;
+
+    await notifier.sendSos(position.latitude, position.longitude);
+  }
+
+  Future<Position?> _getCurrentPosition() async {
     try {
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -444,16 +461,13 @@ class _AuthenticatedLocationSharingViewState
         if (mounted) {
           showErrorDialog(context, '位置情報の権限が許可されていません');
         }
-        return;
+        return null;
       }
 
-      final position = await Geolocator.getCurrentPosition();
-      await notifier.shareCurrentLocation(
-        position.latitude,
-        position.longitude,
-      );
+      return await Geolocator.getCurrentPosition();
     } on Exception catch (e) {
       if (mounted) showErrorDialog(context, '現在地の取得に失敗しました: $e');
+      return null;
     }
   }
 

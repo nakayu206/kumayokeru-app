@@ -66,6 +66,26 @@ class LocationSharingRemoteDataSource {
     return _decodeMap(response, 201, '位置情報の送信に失敗しました');
   }
 
+  /// 緊急連絡(SOS)。routes/groups.tsの`POST /groups/:groupId/sos`を参照。
+  Future<void> sendSos(
+    String token,
+    String groupId, {
+    required double lat,
+    required double lng,
+  }) async {
+    final response = await _send(
+      'POST',
+      '/groups/$groupId/sos',
+      token: token,
+      body: {'lat': lat, 'lng': lng},
+    );
+    if (response.statusCode != 201) {
+      throw LocationSharingApiException(
+        _errorMessage(response, '緊急連絡の送信に失敗しました'),
+      );
+    }
+  }
+
   Future<List<Map<String, dynamic>>> pollLocations(
     String token,
     String groupId,

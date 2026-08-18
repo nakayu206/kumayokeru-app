@@ -30,10 +30,18 @@ storeFile=<キーストアファイルの絶対パス>
 
 ## 3. kumayokeru-backendの本番エンドポイント確認(Phase2以降)
 
-FirebaseのようなGoogleサービス側の`google-services.json`は不要。代わりに
 [環境構築手順.md](環境構築手順.md)セクション10の通り、prod flavorが
 kumayokeru-backendの本番URL(`https://57-182-248-130.sslip.io`、将来的に独自ドメインへ変更の可能性あり)を
 向いているか確認する。
+
+## 3.5 google-services.json(プッシュ通知/FCM、Phase2以降)
+
+`android/app/google-services.json`は、緊急連絡(SOS)のプッシュ通知受信に必要
+(Firebase Console からダウンロード)。**Androidアプリを`com.kumayokeru.app`(prod)・
+`com.kumayokeru.app.dev`・`com.kumayokeru.app.stg`の3つとも同じFirebaseプロジェクトに
+登録し、3パッケージ名すべてを含む1つのgoogle-services.jsonを配置すること**
+(1つでも欠けていると、そのflavorのビルドが`processXxxGoogleServices`タスクで
+「No matching client found for package name ...」エラーになる)。
 
 ## 4. リリースビルドの確認
 
