@@ -43,6 +43,9 @@ kumayokeru-backendの本番URL(`https://57-182-248-130.sslip.io`、将来的に�
 (1つでも欠けていると、そのflavorのビルドが`processXxxGoogleServices`タスクで
 「No matching client found for package name ...」エラーになる)。
 
+> 📝 2026-08-18更新: 3パッケージ名とも登録済み。`flutter build apk --flavor dev/stg/prod`の
+> いずれも成功することを確認済み。
+
 ## 4. リリースビルドの確認
 
 ```bash
