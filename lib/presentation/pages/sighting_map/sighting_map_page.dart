@@ -33,6 +33,7 @@ Color _sightingColor(SightingSourceType sourceType) {
 /// (取得できるまで/失敗時はデフォルト座標を表示)。
 /// 現在地が分かっている場合、一覧は現在地から近い順に並び替える。
 /// 地域名・状況テキストでの検索、一覧タップでの地図フォーカスにも対応。
+/// 地図右下の現在地ボタンで、最新の現在地を取り直して地図を戻せる。
 class SightingMapPage extends ConsumerStatefulWidget {
   const SightingMapPage({super.key});
 
@@ -81,39 +82,57 @@ class _SightingMapPageState extends ConsumerState<SightingMapPage> {
         children: [
           Expanded(
             flex: 3,
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: currentLatLng,
-                initialZoom: MapConstants.defaultZoom,
-              ),
+            child: Stack(
               children: [
-                TileLayer(
-                  urlTemplate: MapConstants.tileUrlTemplate,
-                  userAgentPackageName: 'com.kumayokeru.app',
-                  tileProvider: OfflineFirstTileProvider(
-                    ref.watch(offlineMapServiceProvider),
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: currentLatLng,
+                    initialZoom: MapConstants.defaultZoom,
                   ),
-                ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: currentLatLng,
-                      child: Icon(Icons.my_location, color: AppColors.primary),
+                  children: [
+                    TileLayer(
+                      urlTemplate: MapConstants.tileUrlTemplate,
+                      userAgentPackageName: 'com.kumayokeru.app',
+                      tileProvider: OfflineFirstTileProvider(
+                        ref.watch(offlineMapServiceProvider),
+                      ),
                     ),
-                    ...sightingsAsync.maybeWhen(
-                      data: (sightings) => sightings.map(
-                        (sighting) => Marker(
-                          point: LatLng(sighting.lat, sighting.lng),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: currentLatLng,
                           child: Icon(
-                            Icons.pets,
-                            color: _sightingColor(sighting.sourceType),
+                            Icons.my_location,
+                            color: AppColors.primary,
                           ),
                         ),
-                      ),
-                      orElse: () => const <Marker>[],
+                        ...sightingsAsync.maybeWhen(
+                          data: (sightings) => sightings.map(
+                            (sighting) => Marker(
+                              point: LatLng(sighting.lat, sighting.lng),
+                              child: Icon(
+                                Icons.pets,
+                                color: _sightingColor(sighting.sourceType),
+                              ),
+                            ),
+                          ),
+                          orElse: () => const <Marker>[],
+                        ),
+                      ],
                     ),
                   ],
+                ),
+                Positioned(
+                  right: AppSpacing.md,
+                  bottom: AppSpacing.md,
+                  child: FloatingActionButton.small(
+                    heroTag: 'sighting_map_recenter',
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppColors.primary,
+                    onPressed: () => _recenterToCurrentLocation(context),
+                    child: const Icon(Icons.my_location),
+                  ),
                 ),
               ],
             ),
@@ -211,6 +230,25 @@ class _SightingMapPageState extends ConsumerState<SightingMapPage> {
     _mapController.move(
       LatLng(sighting.lat, sighting.lng),
       MapConstants.detailZoom,
+    );
+  }
+
+  /// ボタン押下時点の最新の現在地を取り直してから地図を移動する
+  /// (initialCenterは初回表示時点の値のまま更新されないため)。
+  Future<void> _recenterToCurrentLocation(BuildContext context) async {
+    final position = await ref.refresh(currentPositionProvider.future);
+    if (!context.mounted) return;
+
+    if (position == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('現在地を取得できませんでした')),
+      );
+      return;
+    }
+
+    _mapController.move(
+      LatLng(position.latitude, position.longitude),
+      MapConstants.defaultZoom,
     );
   }
 
