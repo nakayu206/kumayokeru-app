@@ -79,6 +79,20 @@ class LocationSharingRemoteDataSource {
     return _decodeList(response, 'メンバーの位置情報取得に失敗しました');
   }
 
+  /// GET /locationsと違い、位置情報を一度も送っていないメンバーも含めた
+  /// 「招待済み全員」を返す(routes/groups.ts参照)。
+  Future<List<Map<String, dynamic>>> listMembers(
+    String token,
+    String groupId,
+  ) async {
+    final response = await _send(
+      'GET',
+      '/groups/$groupId/members',
+      token: token,
+    );
+    return _decodeList(response, 'メンバー一覧の取得に失敗しました');
+  }
+
   /// userIdに自分自身を指定するとグループから脱退、オーナーが他人を指定すると
   /// そのメンバーを削除する(routes/groups.tsの`DELETE /groups/:groupId/members/:userId`参照)。
   Future<void> removeMember(

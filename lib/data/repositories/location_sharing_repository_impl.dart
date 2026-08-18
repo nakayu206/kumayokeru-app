@@ -1,7 +1,9 @@
 import 'package:kumayokeru_app/data/datasources/local/auth_token_local_datasource.dart';
 import 'package:kumayokeru_app/data/datasources/remote/location_sharing_remote_datasource.dart';
+import 'package:kumayokeru_app/data/models/group_member_model.dart';
 import 'package:kumayokeru_app/data/models/member_location_model.dart';
 import 'package:kumayokeru_app/data/models/share_group_model.dart';
+import 'package:kumayokeru_app/domain/entities/group_member.dart';
 import 'package:kumayokeru_app/domain/entities/member_location.dart';
 import 'package:kumayokeru_app/domain/entities/share_group.dart';
 import 'package:kumayokeru_app/domain/repositories/location_sharing_repository.dart';
@@ -49,6 +51,13 @@ class LocationSharingRepositoryImpl implements LocationSharingRepository {
     final token = await _requireToken();
     final json = await _remoteDataSource.pollLocations(token, groupId);
     return json.map((e) => MemberLocationModel.fromJson(e).toEntity()).toList();
+  }
+
+  @override
+  Future<List<GroupMember>> listMembers(String groupId) async {
+    final token = await _requireToken();
+    final json = await _remoteDataSource.listMembers(token, groupId);
+    return json.map((e) => GroupMemberModel.fromJson(e).toEntity()).toList();
   }
 
   @override
