@@ -6,13 +6,7 @@ import 'package:kumayokeru_app/infrastructure/notification_sound_player.dart';
 import 'package:kumayokeru_app/infrastructure/presence_notification_audio_handler.dart';
 import 'package:kumayokeru_app/infrastructure/self_check_notification_service.dart';
 
-/// 存在通知機能用のAudioHandlerを初期化する。
-///
-/// AndroidではAudioServiceConfigによりフォアグラウンドサービスとして動作し、
-/// アプリがバックグラウンドでも再生ループ(Timer)と通知音再生が継続する。
-/// あわせてセルフチェック通知(再生が止まったらOS側のアラームで気づける仕組み)も
-/// 初期化する。runApp()より前に呼び出し、結果をpresenceNotificationControllerProviderへ
-/// overrideWithValue()すること。
+/// runApp()より前に呼び出し、結果をpresenceNotificationControllerProviderへoverrideWithValue()すること。
 Future<PresenceNotificationAudioHandler>
 initPresenceNotificationAudioHandler() async {
   final selfCheck = FlutterLocalSelfCheckNotificationService();
@@ -31,11 +25,7 @@ initPresenceNotificationAudioHandler() async {
   );
 }
 
-/// Firebase(プッシュ通知/FCM)を初期化する。
-///
-/// google-services.json(Android)にapplicationIdと一致するクライアント設定が無い場合や、
-/// iOS(GoogleService-Info.plist未配置。iOSはAPNs直接接続方針のため対象外)では失敗するが、
-/// プッシュ通知が使えないだけでアプリ自体は問題なく動作させたいため、ここで例外を吸収する。
+/// 失敗してもアプリ本体は動かしたいので例外を吸収する。
 Future<void> initFirebase() async {
   try {
     await Firebase.initializeApp();

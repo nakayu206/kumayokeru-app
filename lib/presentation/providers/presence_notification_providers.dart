@@ -15,7 +15,6 @@ final presenceNotificationControllerProvider =
       );
     });
 
-/// 存在通知機能の再生状態(仕様書セクション8の状態遷移: idle/notifying)。
 class PresenceNotificationState {
   const PresenceNotificationState({
     this.isNotifying = false,
@@ -36,10 +35,7 @@ class PresenceNotificationState {
   }
 }
 
-/// [PresenceNotificationController](実体はAndroid/iOSのバックグラウンド再生継続を
-/// 担うPresenceNotificationAudioHandler)を購読し、UIに薄く橋渡しするアダプタ。
-/// 再生ループそのものはコントローラ側が保持するため、ここでは
-/// Timer等の状態を持たない(single source of truthはコントローラ)。
+/// コントローラを購読しUIへ橋渡しするアダプタ。状態はコントローラ側が保持する。
 class PresenceNotificationNotifier
     extends StateNotifier<PresenceNotificationState> {
   PresenceNotificationNotifier(this._controller, NotificationSettings settings)

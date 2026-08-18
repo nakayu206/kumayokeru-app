@@ -6,9 +6,7 @@ import 'package:kumayokeru_app/domain/entities/notification_settings.dart';
 abstract interface class NotificationSoundPlayer {
   Future<void> playOnce(NotificationSoundType soundType, double volume);
 
-  /// バックグラウンドでもプロセスが維持されるよう、無音ループの再生を開始する。
-  /// (iOSは「音声を再生していない」アプリをバックグラウンドで終了させるため、
-  /// 存在通知ONの間は無音を鳴らし続けて「音声再生中」の状態を保つ。)
+  /// iOSがバックグラウンドでアプリを終了させないよう無音ループを再生する。
   Future<void> startKeepAliveLoop();
 
   Future<void> stopKeepAliveLoop();
@@ -16,15 +14,7 @@ abstract interface class NotificationSoundPlayer {
   Future<void> dispose();
 }
 
-/// just_audioによる実装。
-///
-/// 「混合」モードで鈴+声を両方鳴らし、声は男声/女声を交互に切り替える。
-/// 同じ音の単調な繰り返しはクマの馴化(音への慣れ)を招くとの調査結果を踏まえた設計
-/// (assets/audio/README.md参照)。
-///
-/// バックグラウンド再生継続は、AndroidはPresenceNotificationAudioHandler経由の
-/// フォアグラウンドサービス、iOSはUIBackgroundModes(audio)+無音ループ再生
-/// (startKeepAliveLoop)で実現する。実機での複数機種検証はPhase 0で別途行う。
+/// 「混合」モードは鈴+声を両方鳴らし、声は男女交互に切り替える。
 class JustAudioNotificationSoundPlayer implements NotificationSoundPlayer {
   final _bellPlayer = AudioPlayer();
   final _voicePlayer = AudioPlayer();

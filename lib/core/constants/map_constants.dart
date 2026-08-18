@@ -1,4 +1,3 @@
-/// 地図関連の定数(仕様書セクション15)。
 class MapConstants {
   MapConstants._();
 
@@ -25,18 +24,14 @@ class MapConstants {
   static const nearbySightingAlertRadiusMeters = 10000.0;
 }
 
-/// 存在通知音の再生に関する定数(仕様書セクション15)。
 class AudioConstants {
   AudioConstants._();
 
   static const defaultIntervalSec = 30;
   static const minIntervalSec = 15;
   static const maxIntervalSec = 120;
-
-  /// 最大音量ではなく控えめな初期値。
   static const defaultVolume = 0.6;
 
-  /// セルフチェック通知(#再生停止検知)の猶予秒数。
-  /// 「再生間隔 + この秒数」だけ次のtickが来なければ、再生が止まったとみなして通知する。
+  /// 再生間隔+この秒数、次のtickが無ければ停止とみなす。
   static const selfCheckMarginSec = 30;
 }

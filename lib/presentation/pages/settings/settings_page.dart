@@ -11,9 +11,6 @@ import 'package:kumayokeru_app/presentation/pages/settings/privacy_settings_page
 import 'package:kumayokeru_app/presentation/providers/auth_providers.dart';
 import 'package:kumayokeru_app/presentation/providers/settings_providers.dart';
 
-/// 設定画面(仕様書セクション12 ④)。
-///
-/// 各設定値はshared_preferencesに永続化され、アプリ起動時に復元される(#13)。
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
@@ -135,9 +132,7 @@ class SettingsPage extends ConsumerWidget {
               MaterialPageRoute(builder: (_) => const PrivacySettingsPage()),
             ),
           ),
-          // プライバシーポリシー・免責事項は正式リリース(Phase 3)前に専門家の
-          // レビューを経て文言を確定させる方針(docs/全体設計書.md参照)のため、
-          // ここでは「準備中」であることを明示し、タップしても壊れて見えないようにする。
+          // 免責事項の文言は専門家レビュー後(Phase 3)に確定させる方針
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('免責事項を確認する'),

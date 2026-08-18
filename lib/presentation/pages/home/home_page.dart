@@ -12,12 +12,6 @@ import 'package:kumayokeru_app/presentation/providers/presence_notification_prov
 import 'package:kumayokeru_app/presentation/providers/sighting_providers.dart';
 import 'package:kumayokeru_app/presentation/providers/weather_providers.dart';
 
-/// ホーム画面(仕様書セクション12 ①)。
-///
-/// 存在通知音の再生(#10)はjust_audioで実装済み。バックグラウンド継続は
-/// PresenceNotificationAudioHandler(audio_service)がAndroidのフォアグラウンド
-/// サービス化・iOSのバックグラウンド音声再生モードを担う(実機での複数機種検証は
-/// Phase 0で別途行う。infrastructure/presence_notification_audio_handler.dart参照)。
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
@@ -275,9 +269,7 @@ class _WeatherContent extends StatelessWidget {
   }
 }
 
-/// 天気アイコンの表示。「晴れ時々曇り」(Icons.wb_cloudy)は雲の形しか描かれず
-/// 太陽が見えないため、実際に「晴れ+曇り」に見えるよう太陽アイコンを
-/// 後ろに重ねて表示する。それ以外の天気は単一アイコンをそのまま表示する。
+/// 晴れ時々曇りは太陽+雲を重ねて表示、それ以外は単一アイコン。
 class _WeatherIcon extends StatelessWidget {
   const _WeatherIcon({required this.condition, required this.size});
 
@@ -328,10 +320,7 @@ class _WeatherCondition {
   final Color color;
 }
 
-/// WMO Weather interpretation code(Open-Meteoの天気コード)を日本語表示に変換する。
-/// https://open-meteo.com/en/docs で定義されているコード一覧に基づく。
-/// 色は天気が一目で分かるよう、それぞれの天気を連想させる配色にしている
-/// (アプリ共通のブランドカラーではなく、この天気カード限定の配色)。
+/// WMO天気コード(Open-Meteo)を日本語表示に変換。
 _WeatherCondition _weatherCondition(int code) {
   return switch (code) {
     0 => const _WeatherCondition(
@@ -483,8 +472,6 @@ class _SightingAlertBanner extends ConsumerWidget {
     final nearbySighting = ref.watch(nearbySightingAlertProvider);
     final sighting = nearbySighting.valueOrNull;
 
-    // 現在地不明・取得失敗・付近に目撃情報なし、のいずれの場合もバナー自体を出さない
-    // (無関係な地域の情報で不安を煽らないため)。
     if (sighting == null) return const SizedBox.shrink();
 
     return Container(

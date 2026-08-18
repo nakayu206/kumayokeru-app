@@ -16,10 +16,7 @@ final sightingsProvider = FutureProvider<List<SightingPost>>((ref) {
   return ref.watch(sightingRepositoryProvider).fetchSightings();
 });
 
-/// 現在地から[MapConstants.nearbySightingAlertRadiusMeters]以内で最も近い
-/// 目撃情報(ホーム画面のアラートバナー用)。無ければnull。
-/// 現在地が取得できない場合はアラート自体を出さない(誤って無関係な地域の
-/// 目撃情報で不安を煽らないため)。
+/// 現在地から半径[MapConstants.nearbySightingAlertRadiusMeters]以内で最も近い目撃情報。
 final nearbySightingAlertProvider = FutureProvider<SightingPost?>((ref) async {
   final position = await ref.watch(currentPositionProvider.future);
   if (position == null) return null;
