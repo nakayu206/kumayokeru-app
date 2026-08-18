@@ -79,6 +79,25 @@ class LocationSharingRemoteDataSource {
     return _decodeList(response, 'メンバーの位置情報取得に失敗しました');
   }
 
+  /// userIdに自分自身を指定するとグループから脱退、オーナーが他人を指定すると
+  /// そのメンバーを削除する(routes/groups.tsの`DELETE /groups/:groupId/members/:userId`参照)。
+  Future<void> removeMember(
+    String token,
+    String groupId,
+    String userId,
+  ) async {
+    final response = await _send(
+      'DELETE',
+      '/groups/$groupId/members/$userId',
+      token: token,
+    );
+    if (response.statusCode != 204) {
+      throw LocationSharingApiException(
+        _errorMessage(response, 'メンバーの削除に失敗しました'),
+      );
+    }
+  }
+
   Future<http.Response> _send(
     String method,
     String path, {
@@ -102,6 +121,8 @@ class LocationSharingRemoteDataSource {
             headers: headers,
             body: body == null ? null : jsonEncode(body),
           );
+        case 'DELETE':
+          return await _client.delete(uri, headers: headers);
         default:
           throw ArgumentError('未対応のHTTPメソッドです: $method');
       }

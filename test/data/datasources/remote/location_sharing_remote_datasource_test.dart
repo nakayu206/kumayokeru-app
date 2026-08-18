@@ -77,6 +77,34 @@ void main() {
       expect(result, isEmpty);
     });
 
+    test('removeMember()はDELETE /groups/:groupId/members/:userIdを叩く', () async {
+      final mockClient = MockClient((request) async {
+        expect(request.method, 'DELETE');
+        expect(request.url.path, '/groups/group-1/members/user-2');
+        expect(request.headers['authorization'], 'Bearer fake-token');
+        return http.Response('', 204);
+      });
+
+      final dataSource = LocationSharingRemoteDataSource(client: mockClient);
+
+      await dataSource.removeMember('fake-token', 'group-1', 'user-2');
+    });
+
+    test('removeMember()は204以外の応答でLocationSharingApiExceptionを投げる', () async {
+      final mockClient = MockClient((request) async {
+        return _jsonResponse({
+          'error': '他のメンバーを削除できるのはグループのオーナーのみです',
+        }, 403);
+      });
+
+      final dataSource = LocationSharingRemoteDataSource(client: mockClient);
+
+      expect(
+        () => dataSource.removeMember('fake-token', 'group-1', 'user-2'),
+        throwsA(isA<LocationSharingApiException>()),
+      );
+    });
+
     test('403応答はLocationSharingApiExceptionを投げる', () async {
       final mockClient = MockClient((request) async {
         return _jsonResponse({'error': 'このグループのメンバーではありません'}, 403);

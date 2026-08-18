@@ -13,6 +13,8 @@ class _FakeTokenLocalDataSource extends AuthTokenLocalDataSource {
 
 class _FakeRemoteDataSource extends LocationSharingRemoteDataSource {
   String? capturedToken;
+  String? removedGroupId;
+  String? removedUserId;
 
   @override
   Future<List<Map<String, dynamic>>> listGroups(String token) async {
@@ -25,6 +27,17 @@ class _FakeRemoteDataSource extends LocationSharingRemoteDataSource {
         'createdAt': '2026-07-25T06:30:00+09:00',
       },
     ];
+  }
+
+  @override
+  Future<void> removeMember(
+    String token,
+    String groupId,
+    String userId,
+  ) async {
+    capturedToken = token;
+    removedGroupId = groupId;
+    removedUserId = userId;
   }
 }
 
@@ -54,6 +67,20 @@ void main() {
       expect(remote.capturedToken, 'fake-token');
       expect(groups, hasLength(1));
       expect(groups.first.name, '家族グループ');
+    });
+
+    test('removeMember()はトークンを付けてリモートのremoveMemberを呼び出す', () async {
+      final remote = _FakeRemoteDataSource();
+      final repository = LocationSharingRepositoryImpl(
+        remoteDataSource: remote,
+        tokenLocalDataSource: _FakeTokenLocalDataSource()..token = 'fake-token',
+      );
+
+      await repository.removeMember('group-1', 'user-2');
+
+      expect(remote.capturedToken, 'fake-token');
+      expect(remote.removedGroupId, 'group-1');
+      expect(remote.removedUserId, 'user-2');
     });
   });
 }
