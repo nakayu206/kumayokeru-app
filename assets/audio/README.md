@@ -26,13 +26,23 @@
 ## 音量調整
 
 `bell.mp3`は出典の時点で平均音量(mean_volume)が-37.9dBと、`voice_*.mp3`(-22.9dB前後)
-より大幅に小さかったため、2026-08-18にffmpegで+11.6dBのゲインブースト(音量スライダーが
-最大でも鈴の音だけ体感的に小さく感じる問題への対処)を行った。ブースト後は平均-26.6dB・
-最大-1.2dB(クリッピングなし)。再調整する場合は以下のコマンドを参考にすること。
+より大幅に小さかったため、2026-08-18にffmpegで音量調整を行った。
+
+- 1回目(単純なゲインブースト+11.6dB): 平均-26.6dB・最大-1.2dB
+- 2回目(方針変更。「音量スライダーの最大はうるさいぐらいでよく、静かにしたい場合は
+  ユーザー側で下げてもらう」という設計判断に基づき、コンプレッサー+リミッターで
+  さらに底上げ): 平均-21.8dB・最大-0.14dB(クリッピングなし、`voice_*.mp3`より大きい)
+
+再調整する場合は以下を参考にすること。
 
 ```bash
 ffmpeg -i bell.mp3 -af "volumedetect" -f null -   # 現在の音量を確認
-ffmpeg -i bell.mp3 -af "volume=Xd" -ar 44100 -ac 2 -b:a 192k bell_boosted.mp3
+
+# 単純なゲインブースト(音源のダイナミクスはそのまま、上げすぎるとクリッピングする)
+ffmpeg -i bell.mp3 -af "volume=Xd" -ar 44100 -ac 2 -b:a 192k out.mp3
+
+# コンプレッサー+リミッターでのラウドネス底上げ(クリッピングせずに大きく感じさせたい場合)
+ffmpeg -i bell.mp3 -af "acompressor=threshold=-25dB:ratio=6:attack=5:release=100:makeup=1,volume=18dB,alimiter=limit=0.97:attack=1:release=50" -ar 44100 -ac 2 -b:a 192k out.mp3
 ```
 
 ## 今後の検討
