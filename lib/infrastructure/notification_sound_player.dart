@@ -14,12 +14,13 @@ abstract interface class NotificationSoundPlayer {
   Future<void> dispose();
 }
 
-/// 「混合」モードは鈴+声を両方鳴らし、声は男女交互に切り替える。
+/// 「混合」モードは鈴と声を交互に切り替える。声はさらに男女交互に切り替わる。
 class JustAudioNotificationSoundPlayer implements NotificationSoundPlayer {
   final _bellPlayer = AudioPlayer();
   final _voicePlayer = AudioPlayer();
   final _keepAlivePlayer = AudioPlayer();
   bool _nextVoiceIsMale = true;
+  bool _nextMixedIsBell = true;
 
   @override
   Future<void> playOnce(NotificationSoundType soundType, double volume) async {
@@ -29,8 +30,17 @@ class JustAudioNotificationSoundPlayer implements NotificationSoundPlayer {
       case NotificationSoundType.voice:
         await _playVoice(volume);
       case NotificationSoundType.mixed:
-        await _play(_bellPlayer, 'assets/audio/bell.mp3', volume);
-        await _playVoice(volume);
+        await _playMixed(volume);
+    }
+  }
+
+  Future<void> _playMixed(double volume) async {
+    final playBell = _nextMixedIsBell;
+    _nextMixedIsBell = !_nextMixedIsBell;
+    if (playBell) {
+      await _play(_bellPlayer, 'assets/audio/bell.mp3', volume);
+    } else {
+      await _playVoice(volume);
     }
   }
 
