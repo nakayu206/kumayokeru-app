@@ -94,27 +94,30 @@ class SettingsPage extends ConsumerWidget {
               final authState = ref.watch(authProvider);
               if (authState.isAuthenticated) {
                 final user = authState.user!;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.account_circle),
-                  title: Text(user.name),
-                  subtitle: Text(user.email),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.account_circle),
+                      title: Text(user.name),
+                      subtitle: Text(user.email),
+                      trailing: IconButton(
                         icon: const Icon(Icons.edit),
                         tooltip: '表示名を変更',
                         onPressed: () =>
                             _showEditNameDialog(context, ref, user.name),
                       ),
-                      TextButton(
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
                         onPressed: () =>
                             ref.read(authProvider.notifier).logout(),
                         child: const Text('ログアウト'),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 );
               }
               return ListTile(
