@@ -6,6 +6,7 @@ import 'package:kumayokeru_app/core/constants/app_sizes.dart';
 import 'package:kumayokeru_app/core/constants/app_spacing.dart';
 import 'package:kumayokeru_app/domain/entities/notification_settings.dart';
 import 'package:kumayokeru_app/presentation/pages/auth/login_page.dart';
+import 'package:kumayokeru_app/presentation/pages/settings/disclaimer_page.dart';
 import 'package:kumayokeru_app/presentation/pages/settings/map_data_management_page.dart';
 import 'package:kumayokeru_app/presentation/pages/settings/privacy_settings_page.dart';
 import 'package:kumayokeru_app/presentation/providers/auth_providers.dart';
@@ -132,13 +133,13 @@ class SettingsPage extends ConsumerWidget {
               MaterialPageRoute(builder: (_) => const PrivacySettingsPage()),
             ),
           ),
-          // 免責事項の文言は専門家レビュー後(Phase 3)に確定させる方針
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('免責事項を確認する'),
-            subtitle: const Text('準備中'),
-            enabled: false,
             trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const DisclaimerPage())),
           ),
         ],
       ),
