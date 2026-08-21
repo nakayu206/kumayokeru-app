@@ -50,16 +50,17 @@ void main() {
   });
 
   group('AuthRemoteDataSource.login', () {
-    test('200応答からtokenを取得する', () async {
+    test('200応答からtoken, nameを取得する', () async {
       final mockClient = MockClient((request) async {
         expect(request.url.path, '/auth/login');
-        return _jsonResponse({'token': 'fake-jwt-token'}, 200);
+        return _jsonResponse({'token': 'fake-jwt-token', 'name': 'たろう'}, 200);
       });
 
       final dataSource = AuthRemoteDataSource(client: mockClient);
-      final token = await dataSource.login('a@example.com', 'password123');
+      final result = await dataSource.login('a@example.com', 'password123');
 
-      expect(token, 'fake-jwt-token');
+      expect(result['token'], 'fake-jwt-token');
+      expect(result['name'], 'たろう');
     });
 
     test('401応答(認証失敗)はAuthApiExceptionを投げる', () async {
@@ -71,6 +72,38 @@ void main() {
 
       expect(
         () => dataSource.login('a@example.com', 'wrong-password'),
+        throwsA(isA<AuthApiException>()),
+      );
+    });
+  });
+
+  group('AuthRemoteDataSource.updateName', () {
+    test('200応答からid, email, nameを取得する', () async {
+      final mockClient = MockClient((request) async {
+        expect(request.url.path, '/me');
+        expect(request.method, 'PATCH');
+        expect(request.headers['authorization'], 'Bearer fake-jwt-token');
+        return _jsonResponse(
+          {'id': 'user-1', 'email': 'a@example.com', 'name': '次郎'},
+          200,
+        );
+      });
+
+      final dataSource = AuthRemoteDataSource(client: mockClient);
+      final result = await dataSource.updateName('fake-jwt-token', '次郎');
+
+      expect(result['name'], '次郎');
+    });
+
+    test('400応答(不正なname)はAuthApiExceptionを投げる', () async {
+      final mockClient = MockClient((request) async {
+        return _jsonResponse({'error': 'name は1〜50文字の文字列で指定してください'}, 400);
+      });
+
+      final dataSource = AuthRemoteDataSource(client: mockClient);
+
+      expect(
+        () => dataSource.updateName('fake-jwt-token', ''),
         throwsA(isA<AuthApiException>()),
       );
     });

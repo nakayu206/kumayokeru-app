@@ -295,7 +295,7 @@ class _AuthenticatedLocationSharingViewState
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('メンバーを削除しますか?'),
-        content: Text('${member.email} をグループから削除します。'),
+        content: Text('${member.name} をグループから削除します。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -550,7 +550,7 @@ class _MemberTile extends StatelessWidget {
     return Card(
       child: ListTile(
         leading: const Icon(Icons.person, color: AppColors.primary),
-        title: Text(member.email),
+        title: Text(member.name),
         subtitle: Text(
           location == null
               ? 'まだ位置情報が共有されていません'

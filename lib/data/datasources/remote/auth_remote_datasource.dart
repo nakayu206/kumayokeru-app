@@ -37,8 +37,8 @@ class AuthRemoteDataSource {
     return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
   }
 
-  /// 成功時はJWTトークンを返す。email/password不一致(401)の場合はAuthApiExceptionを投げる。
-  Future<String> login(String email, String password) async {
+  /// 成功時は`{token, name}`を返す。email/password不一致(401)の場合はAuthApiExceptionを投げる。
+  Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await _post('/auth/login', {
       'email': email,
       'password': password,
@@ -48,9 +48,30 @@ class AuthRemoteDataSource {
       throw AuthApiException(_errorMessage(response, 'ログインに失敗しました'));
     }
 
-    final body =
-        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
-    return body['token'] as String;
+    return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+  }
+
+  /// 成功時は`{id, email, name}`を返す。1〜50文字以外(400)の場合はAuthApiExceptionを投げる。
+  Future<Map<String, dynamic>> updateName(String token, String name) async {
+    final http.Response response;
+    try {
+      response = await _client.patch(
+        _baseUrl.replace(path: '/me'),
+        headers: {
+          'authorization': 'Bearer $token',
+          'content-type': 'application/json',
+        },
+        body: jsonEncode({'name': name}),
+      );
+    } on Exception catch (e) {
+      throw AuthApiException('通信エラーが発生しました: $e');
+    }
+
+    if (response.statusCode != 200) {
+      throw AuthApiException(_errorMessage(response, '表示名の変更に失敗しました'));
+    }
+
+    return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
   }
 
   Future<http.Response> _post(String path, Map<String, dynamic> body) async {
