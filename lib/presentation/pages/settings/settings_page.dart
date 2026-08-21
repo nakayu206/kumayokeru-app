@@ -93,14 +93,27 @@ class SettingsPage extends ConsumerWidget {
             builder: (context) {
               final authState = ref.watch(authProvider);
               if (authState.isAuthenticated) {
+                final user = authState.user!;
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.account_circle),
-                  title: Text(authState.user!.email),
-                  subtitle: const Text('ログイン中'),
-                  trailing: TextButton(
-                    onPressed: () => ref.read(authProvider.notifier).logout(),
-                    child: const Text('ログアウト'),
+                  title: Text(user.name),
+                  subtitle: Text(user.email),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        tooltip: '表示名を変更',
+                        onPressed: () =>
+                            _showEditNameDialog(context, ref, user.name),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            ref.read(authProvider.notifier).logout(),
+                        child: const Text('ログアウト'),
+                      ),
+                    ],
                   ),
                 );
               }
@@ -144,5 +157,38 @@ class SettingsPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+Future<void> _showEditNameDialog(
+  BuildContext context,
+  WidgetRef ref,
+  String currentName,
+) async {
+  final nameController = TextEditingController(text: currentName);
+  final newName = await showDialog<String>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('表示名を変更'),
+      content: TextField(
+        controller: nameController,
+        decoration: const InputDecoration(labelText: '表示名'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: const Text('キャンセル'),
+        ),
+        TextButton(
+          onPressed: () =>
+              Navigator.of(dialogContext).pop(nameController.text.trim()),
+          child: const Text('変更'),
+        ),
+      ],
+    ),
+  );
+
+  if (newName != null && newName.isNotEmpty && newName != currentName) {
+    await ref.read(authProvider.notifier).updateName(newName);
   }
 }

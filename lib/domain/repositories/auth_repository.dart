@@ -8,6 +8,9 @@ abstract interface class AuthRepository {
 
   Future<AuthUser> login(String email, String password);
 
+  /// 表示名(グループメンバー一覧・SOS通知等で他ユーザーに見える名前)を変更する。
+  Future<AuthUser> updateName(String name);
+
   Future<void> logout();
 
   /// 保存済みトークンからユーザー情報を復元する(未ログインならnull)。

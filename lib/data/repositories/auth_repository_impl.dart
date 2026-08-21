@@ -24,21 +24,41 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<AuthUser> login(String email, String password) async {
-    final token = await _remoteDataSource.login(email, password);
+    final body = await _remoteDataSource.login(email, password);
+    final token = body['token'] as String;
+    final name = body['name'] as String;
     await _tokenLocalDataSource.saveToken(token);
-    return _userFromToken(token);
+    await _tokenLocalDataSource.saveName(name);
+    return _userFromToken(token, name);
   }
 
   @override
-  Future<void> logout() {
-    return _tokenLocalDataSource.clearToken();
+  Future<AuthUser> updateName(String name) async {
+    final token = await _tokenLocalDataSource.readToken();
+    if (token == null) {
+      throw AuthApiException('ログインが必要です');
+    }
+    final body = await _remoteDataSource.updateName(token, name);
+    final updatedName = body['name'] as String;
+    await _tokenLocalDataSource.saveName(updatedName);
+    return _userFromToken(token, updatedName);
+  }
+
+  @override
+  Future<void> logout() async {
+    await _tokenLocalDataSource.clearToken();
+    await _tokenLocalDataSource.clearName();
   }
 
   @override
   Future<AuthUser?> currentUser() async {
     final token = await _tokenLocalDataSource.readToken();
     if (token == null) return null;
-    return _userFromToken(token);
+    final payload = decodeJwtPayload(token);
+    final email = payload['email'] as String;
+    // 名前未キャッシュ(旧バージョンからの引き継ぎ等)はemailのローカル部で暫定表示する。
+    final name = await _tokenLocalDataSource.readName() ?? email.split('@').first;
+    return _userFromToken(token, name);
   }
 
   @override
@@ -46,11 +66,12 @@ class AuthRepositoryImpl implements AuthRepository {
     return _tokenLocalDataSource.readToken();
   }
 
-  AuthUser _userFromToken(String token) {
+  AuthUser _userFromToken(String token, String name) {
     final payload = decodeJwtPayload(token);
     return AuthUser(
       id: payload['sub'] as String,
       email: payload['email'] as String,
+      name: name,
     );
   }
 }

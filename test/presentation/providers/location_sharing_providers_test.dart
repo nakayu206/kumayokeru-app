@@ -75,6 +75,7 @@ void main() {
     final ownerLocation = MemberLocation(
       userId: 'user-1',
       email: 'owner@example.com',
+      name: 'owner',
       lat: 35.0,
       lng: 139.0,
       recordedAt: DateTime(2026, 7, 25),
@@ -82,6 +83,7 @@ void main() {
     final memberLocation = MemberLocation(
       userId: 'user-2',
       email: 'member@example.com',
+      name: 'member',
       lat: 35.1,
       lng: 139.1,
       recordedAt: DateTime(2026, 7, 25),
@@ -89,11 +91,13 @@ void main() {
     final ownerMember = GroupMember(
       userId: 'user-1',
       email: 'owner@example.com',
+      name: 'owner',
       joinedAt: DateTime(2026, 7, 25),
     );
     final invitedMember = GroupMember(
       userId: 'user-2',
       email: 'member@example.com',
+      name: 'member',
       joinedAt: DateTime(2026, 7, 25),
     );
 

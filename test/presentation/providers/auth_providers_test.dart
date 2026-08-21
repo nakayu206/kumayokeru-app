@@ -19,7 +19,18 @@ class _FakeAuthRepository implements AuthRepository {
     if (nextErrorMessage != null) {
       throw AuthApiException(nextErrorMessage!);
     }
-    final user = AuthUser(id: 'user-1', email: email);
+    final user = AuthUser(id: 'user-1', email: email, name: email.split('@').first);
+    loggedInUser = user;
+    return user;
+  }
+
+  @override
+  Future<AuthUser> updateName(String name) async {
+    if (nextErrorMessage != null) {
+      throw AuthApiException(nextErrorMessage!);
+    }
+    final current = loggedInUser!;
+    final user = AuthUser(id: current.id, email: current.email, name: name);
     loggedInUser = user;
     return user;
   }
@@ -74,6 +85,25 @@ void main() {
       final state = container.read(authProvider);
       expect(state.isAuthenticated, false);
       expect(state.errorMessage, 'emailまたはpasswordが正しくありません');
+    });
+
+    test('updateName()成功でstate.user.nameが更新される', () async {
+      final fakeRepository = _FakeAuthRepository();
+      final container = ProviderContainer(
+        overrides: [authRepositoryProvider.overrideWithValue(fakeRepository)],
+      );
+      addTearDown(container.dispose);
+      container.read(authProvider);
+      await pumpEventQueue();
+
+      await container
+          .read(authProvider.notifier)
+          .login('a@example.com', 'password123');
+      await container.read(authProvider.notifier).updateName('新しい名前');
+
+      final state = container.read(authProvider);
+      expect(state.isAuthenticated, true);
+      expect(state.user!.name, '新しい名前');
     });
 
     test('logout()でstate.userがクリアされる', () async {
