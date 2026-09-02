@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_plus/isar_plus.dart';
 
 import 'package:kumayokeru_app/domain/entities/sighting.dart';
 
@@ -9,7 +9,8 @@ part 'sighting_cache_model.g.dart';
 class SightingCacheModel {
   SightingCacheModel();
 
-  Id id = Isar.autoIncrement;
+  @Id()
+  String get id => sightingId;
 
   late String sightingId;
   late double lat;
@@ -18,7 +19,7 @@ class SightingCacheModel {
   late String description;
   late String areaName;
 
-  @enumerated
+  @enumValue
   late SightingSourceType sourceType;
 
   factory SightingCacheModel.fromEntity(SightingPost entity) {

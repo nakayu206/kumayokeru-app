@@ -45,9 +45,10 @@ dependencies:
   # 地図(オフラインタイルキャッシュは自前実装。flutter_map_tile_cachingはGPL v3のため不採用)
   flutter_map: ^8.3.1
 
-  # ローカルDB
-  isar: ^3.1.0
-  isar_flutter_libs: ^3.1.0
+  # ローカルDB(isar/isar_flutter_libsは16KBページサイズ非対応のため、対応済みの
+  # isar_plus/isar_plus_flutter_libsに移行。 https://github.com/isar/isar/issues/1699)
+  isar_plus: 1.2.6
+  isar_plus_flutter_libs: 1.2.6
   path_provider: ^2.1.6
 
   # バックグラウンド音声(存在通知機能)
@@ -85,9 +86,8 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
-  # コード生成(Isarスキーマ用)
+  # コード生成(Isarスキーマ用。isar_plus自体にジェネレータが同梱されている)
   build_runner: ^2.4.13
-  isar_generator: ^3.1.0
 
   # テスト(TekuShareと同方針)
   mockito: ">=5.4.4 <5.6.5"
