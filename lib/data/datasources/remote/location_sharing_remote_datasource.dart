@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'package:kumayokeru_app/core/config/flavor.dart';
+
 /// kumayokeru-backendの位置情報共有API(`/groups`, `/locations`)への通信に
 /// 失敗した場合の例外。
 class LocationSharingApiException implements Exception {
@@ -18,7 +20,7 @@ class LocationSharingApiException implements Exception {
 class LocationSharingRemoteDataSource {
   LocationSharingRemoteDataSource({http.Client? client, Uri? baseUrl})
     : _client = client ?? http.Client(),
-      _baseUrl = baseUrl ?? Uri.parse('https://57-182-248-130.sslip.io');
+      _baseUrl = baseUrl ?? Uri.parse(AppConfig.backendBaseUrl);
 
   final http.Client _client;
   final Uri _baseUrl;

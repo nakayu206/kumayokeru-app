@@ -25,4 +25,17 @@ class AppConfig {
         return 'クマヨケール';
     }
   }
+
+  /// kumayokeru-backendの接続先。dev/stgは本番DBを汚さないよう別インスタンス
+  /// (同じEC2上、ポート3001でnginxが別プロセスにリバースプロキシ)に向ける
+  /// (docs/AWSデプロイ手順.md参照)。
+  static String get backendBaseUrl {
+    switch (flavor) {
+      case Flavor.dev:
+      case Flavor.stg:
+        return 'https://57-182-248-130.sslip.io:3001';
+      case Flavor.prod:
+        return 'https://57-182-248-130.sslip.io';
+    }
+  }
 }

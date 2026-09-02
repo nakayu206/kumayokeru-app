@@ -2,9 +2,10 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'package:kumayokeru_app/core/config/flavor.dart';
 import 'package:kumayokeru_app/data/models/sighting_model.dart';
 
-/// kumayokeru-backend(https://57-182-248-130.sslip.io)への通信に失敗した場合の例外。
+/// kumayokeru-backend(AppConfig.backendBaseUrl参照)への通信に失敗した場合の例外。
 class SightingsApiException implements Exception {
   SightingsApiException(this.message);
 
@@ -19,7 +20,7 @@ class SightingsApiException implements Exception {
 class SightingsRemoteDataSource {
   SightingsRemoteDataSource({http.Client? client, Uri? baseUrl})
     : _client = client ?? http.Client(),
-      _baseUrl = baseUrl ?? Uri.parse('https://57-182-248-130.sslip.io');
+      _baseUrl = baseUrl ?? Uri.parse(AppConfig.backendBaseUrl);
 
   final http.Client _client;
   final Uri _baseUrl;
