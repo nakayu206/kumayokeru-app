@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_plus/isar_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:kumayokeru_app/data/models/sighting_cache_model.dart';
@@ -12,9 +12,10 @@ class SightingLocalDataSource {
     if (existing != null) return existing;
 
     final dir = await getApplicationDocumentsDirectory();
-    final isar = await Isar.open([
-      SightingCacheModelSchema,
-    ], directory: dir.path);
+    final isar = Isar.open(
+      schemas: [SightingCacheModelSchema],
+      directory: dir.path,
+    );
     _isar = isar;
     return isar;
   }
@@ -22,9 +23,9 @@ class SightingLocalDataSource {
   /// 既存キャッシュを全て置き換える(最新の一覧取得結果をそのまま保存する想定)。
   Future<void> cacheAll(List<SightingCacheModel> models) async {
     final isar = await _getIsar();
-    await isar.writeTxn(() async {
-      await isar.sightingCacheModels.clear();
-      await isar.sightingCacheModels.putAll(models);
+    isar.write((isar) {
+      isar.sightingCacheModels.clear();
+      isar.sightingCacheModels.putAll(models);
     });
   }
 
