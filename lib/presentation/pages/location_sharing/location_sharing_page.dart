@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
@@ -406,8 +408,9 @@ class _AuthenticatedLocationSharingViewState
 
     if (phoneNumber == null) return;
 
-    // 電話発信は位置共有の成否に関わらず必ず試みる
-    await _sendSosLocation(notifier);
+    // GPS取得・SOS送信にはタイムアウトが無く電波状況次第で長時間かかりうるため、
+    // 発信を待たせないよう位置共有は待たずに別途試みる。
+    unawaited(_sendSosLocation(notifier));
 
     final uri = Uri(scheme: 'tel', path: phoneNumber);
     final canLaunch = await canLaunchUrl(uri);

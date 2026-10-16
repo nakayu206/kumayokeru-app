@@ -25,4 +25,13 @@ class DeviceRepositoryImpl implements DeviceRepository {
       platform: platform,
     );
   }
+
+  @override
+  Future<void> unregisterToken(String deviceToken) async {
+    final authToken = await _tokenLocalDataSource.readToken();
+    if (authToken == null) {
+      throw DeviceApiException('ログインが必要です');
+    }
+    await _remoteDataSource.unregisterToken(authToken, deviceToken: deviceToken);
+  }
 }

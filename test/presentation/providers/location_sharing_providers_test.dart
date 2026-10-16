@@ -1,11 +1,72 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:kumayokeru_app/domain/entities/auth_user.dart';
 import 'package:kumayokeru_app/domain/entities/group_member.dart';
 import 'package:kumayokeru_app/domain/entities/member_location.dart';
 import 'package:kumayokeru_app/domain/entities/share_group.dart';
+import 'package:kumayokeru_app/domain/repositories/auth_repository.dart';
+import 'package:kumayokeru_app/domain/repositories/device_repository.dart';
 import 'package:kumayokeru_app/domain/repositories/location_sharing_repository.dart';
+import 'package:kumayokeru_app/infrastructure/push_notification_service.dart';
+import 'package:kumayokeru_app/infrastructure/push_notification_setup.dart';
+import 'package:kumayokeru_app/presentation/providers/auth_providers.dart';
 import 'package:kumayokeru_app/presentation/providers/location_sharing_providers.dart';
+import 'package:kumayokeru_app/presentation/providers/push_notification_providers.dart';
+
+// locationSharingProviderはログインユーザーIDを監視するため、authProvider関連の
+// 依存(Firebase等に触れる)をダミーに差し替える必要がある。
+class _FakeAuthRepository implements AuthRepository {
+  @override
+  Future<AuthUser> signUp(String email, String password) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<AuthUser> login(String email, String password) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<AuthUser> updateName(String name) async => throw UnimplementedError();
+
+  @override
+  Future<void> logout() async {}
+
+  @override
+  Future<AuthUser?> currentUser() async =>
+      const AuthUser(id: 'user-1', email: 'owner@example.com', name: 'owner');
+
+  @override
+  Future<String?> currentToken() async => 'fake-jwt-token';
+}
+
+class _NoopPushNotificationService implements PushNotificationService {
+  @override
+  Future<void> initialize({
+    required Future<void> Function(String token) onToken,
+  }) async {}
+
+  @override
+  Future<String?> getCurrentToken() async => null;
+}
+
+class _NoopDeviceRepository implements DeviceRepository {
+  @override
+  Future<void> registerToken(String deviceToken, String platform) async {}
+
+  @override
+  Future<void> unregisterToken(String deviceToken) async {}
+}
+
+final _noopPushNotificationSetup = PushNotificationSetup(
+  _NoopPushNotificationService(),
+  _NoopDeviceRepository(),
+  isAndroid: () => false,
+);
+
+final _authProviderOverrides = [
+  authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
+  pushNotificationSetupProvider.overrideWithValue(_noopPushNotificationSetup),
+];
 
 class _FakeLocationSharingRepository implements LocationSharingRepository {
   List<ShareGroup> groups = [];
@@ -109,9 +170,14 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           locationSharingRepositoryProvider.overrideWithValue(fakeRepository),
+          ..._authProviderOverrides,
         ],
       );
       addTearDown(container.dispose);
+      // 先にauth復元を完了させてから読むことで、ユーザーID確定によるlocationSharingProvider
+      // の作り直し(と、その際の二重_loadGroup()実行)を避ける。
+      container.read(authProvider);
+      await pumpEventQueue();
       container.read(locationSharingProvider);
       await pumpEventQueue();
 
@@ -133,9 +199,14 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           locationSharingRepositoryProvider.overrideWithValue(fakeRepository),
+          ..._authProviderOverrides,
         ],
       );
       addTearDown(container.dispose);
+      // 先にauth復元を完了させてから読むことで、ユーザーID確定によるlocationSharingProvider
+      // の作り直し(と、その際の二重_loadGroup()実行)を避ける。
+      container.read(authProvider);
+      await pumpEventQueue();
       container.read(locationSharingProvider);
       await pumpEventQueue();
 
@@ -152,9 +223,14 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           locationSharingRepositoryProvider.overrideWithValue(fakeRepository),
+          ..._authProviderOverrides,
         ],
       );
       addTearDown(container.dispose);
+      // 先にauth復元を完了させてから読むことで、ユーザーID確定によるlocationSharingProvider
+      // の作り直し(と、その際の二重_loadGroup()実行)を避ける。
+      container.read(authProvider);
+      await pumpEventQueue();
       container.read(locationSharingProvider);
       await pumpEventQueue();
 
@@ -177,9 +253,14 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           locationSharingRepositoryProvider.overrideWithValue(fakeRepository),
+          ..._authProviderOverrides,
         ],
       );
       addTearDown(container.dispose);
+      // 先にauth復元を完了させてから読むことで、ユーザーID確定によるlocationSharingProvider
+      // の作り直し(と、その際の二重_loadGroup()実行)を避ける。
+      container.read(authProvider);
+      await pumpEventQueue();
       container.read(locationSharingProvider);
       await pumpEventQueue();
 

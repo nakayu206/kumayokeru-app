@@ -51,6 +51,28 @@ class DeviceRemoteDataSource {
     }
   }
 
+  Future<void> unregisterToken(String authToken, {required String deviceToken}) async {
+    final uri = _baseUrl.replace(path: '/devices');
+
+    http.Response response;
+    try {
+      response = await _client.delete(
+        uri,
+        headers: {
+          'authorization': 'Bearer $authToken',
+          'content-type': 'application/json',
+        },
+        body: jsonEncode({'token': deviceToken}),
+      );
+    } on Exception catch (e) {
+      throw DeviceApiException('通信エラーが発生しました: $e');
+    }
+
+    if (response.statusCode != 204) {
+      throw DeviceApiException(_errorMessage(response));
+    }
+  }
+
   String _errorMessage(http.Response response) {
     try {
       final body =

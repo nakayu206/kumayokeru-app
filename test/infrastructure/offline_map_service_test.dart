@@ -94,8 +94,41 @@ void main() {
           .toList();
 
       expect(progresses.last.isDone, isTrue);
+      expect(progresses.last.failed, 0);
       expect(await service.cachedTileCount(), progresses.last.total);
       expect(progresses.last.total, greaterThan(0));
+    });
+
+    test('一部のタイルが取得失敗しても止まらず、failedとして記録する', () async {
+      var requestCount = 0;
+      final client = MockClient((request) async {
+        requestCount++;
+        // 1枚目は失敗、以降は成功させる(全滅と混同しないことを確認するため)。
+        if (requestCount == 1) {
+          return http.Response('', 500);
+        }
+        return http.Response.bytes([1], 200);
+      });
+      final service = FileOfflineMapService(
+        httpClient: client,
+        baseDirectory: tempDir,
+      );
+
+      final progresses = await service
+          .downloadRegion(
+            urlTemplate: 'https://example.com/{z}/{x}/{y}.png',
+            centerLat: 35.0,
+            centerLng: 139.0,
+            radiusKm: 1,
+            minZoom: 14,
+            maxZoom: 14,
+          )
+          .toList();
+
+      expect(progresses.last.isDone, isTrue);
+      expect(progresses.last.failed, greaterThan(0));
+      // 失敗した分はキャッシュに保存されないため、cachedTileCountはtotal未満になる。
+      expect(await service.cachedTileCount(), lessThan(progresses.last.total));
     });
 
     test('clearCacheでキャッシュが空になる', () async {

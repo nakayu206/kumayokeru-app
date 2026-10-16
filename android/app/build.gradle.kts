@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -6,6 +8,16 @@ plugins {
     // FCM(プッシュ通知)用。google-services.jsonの内容をビルドに反映する
     id("com.google.gms.google-services")
 }
+
+// android/key.properties(Git管理対象外)が無ければnull。ストア提出用の本番署名鍵を
+// 用意したら、android/key.properties.example を参考にkey.propertiesを作成すること。
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        load(keystorePropertiesFile.inputStream())
+    }
+}
+val hasReleaseKeystore = keystorePropertiesFile.exists()
 
 android {
     namespace = "com.kumayokeru.kumayokeru_app"
@@ -50,11 +62,30 @@ android {
         }
     }
 
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            create("release") {
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: リリース用の署名設定を追加する(セクション19 Androidリリースチェックリスト参照)。
-            // 現状はデバッグ鍵で署名しているため `flutter build --flavor prod --release` は通るが、ストア提出前に必ず差し替える。
-            signingConfig = signingConfigs.getByName("debug")
+            if (hasReleaseKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                // key.properties未作成の間はデバッグ鍵で署名する(配布テスト用途等)。
+                // ストアに提出するビルドを作る前に、必ずkey.propertiesを用意すること。
+                signingConfig = signingConfigs.getByName("debug")
+                logger.warn(
+                    "WARNING: android/key.properties が無いため、release ビルドはデバッグ鍵で" +
+                        "署名されています。ストア提出用のビルドには使えません。",
+                )
+            }
         }
     }
 }

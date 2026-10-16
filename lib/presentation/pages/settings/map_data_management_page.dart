@@ -66,7 +66,10 @@ class _MapDataManagementPageState extends ConsumerState<MapDataManagementPage> {
             LinearProgressIndicator(value: _progress!.ratio),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              '${_progress!.completed} / ${_progress!.total}タイル',
+              _progress!.failed > 0
+                  ? '${_progress!.completed} / ${_progress!.total}タイル'
+                        '(失敗 ${_progress!.failed}枚)'
+                  : '${_progress!.completed} / ${_progress!.total}タイル',
               style: TextStyle(fontSize: AppSizes.fontSm),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -130,11 +133,18 @@ class _MapDataManagementPageState extends ConsumerState<MapDataManagementPage> {
           maxZoom: MapConstants.offlineDownloadMaxZoom,
         )
         .listen(
-          (progress) {
+          (progress) async {
             if (!mounted) return;
             setState(() => _progress = progress);
             if (progress.isDone) {
               ref.invalidate(offlineMapCacheStatsProvider);
+              if (progress.failed > 0) {
+                await showErrorDialog(
+                  context,
+                  '${progress.failed}枚のタイルを保存できませんでした。'
+                  '電波の良い場所でもう一度お試しください。',
+                );
+              }
             }
           },
           onError: (Object error) async {
