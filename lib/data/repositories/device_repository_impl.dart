@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:kumayokeru_app/core/utils/jwt_decoder.dart';
 import 'package:kumayokeru_app/data/datasources/local/auth_token_local_datasource.dart';
 import 'package:kumayokeru_app/data/datasources/local/device_registration_local_datasource.dart';
@@ -28,19 +30,36 @@ class DeviceRepositoryImpl implements DeviceRepository {
 
   // registerToken()が通信中(まだ登録IDを保存していない)の間にunregisterToken()が
   // 呼ばれた場合、「登録した記録が無い」ために解除せず終わってしまい、登録が完了
-  // すると(通信が5秒以上かかる等で呼び出し側が待ちきれず諦めた後でも)ログアウト
-  // 済みのアカウントに通知登録が残ってしまう。
+  // すると(呼び出し側が待ちきれず諦めた後でも)ログアウト済みのアカウントに通知
+  // 登録が残ってしまう。保存済みの登録ID(古い世代)がある場合でも、再登録が
+  // 進行中であれば同じ問題が起きる(古い世代だけを解除し、新しい世代を取り逃す)。
   //
-  // これを「待って直列化する」方式ではなく、イベント駆動で解決する: その場では
-  // 解除要求があったことと、解除に使うJWT(ログアウトで消える前の有効なもの)を
-  // deviceToken単位で覚えておくだけにして即座に返り、登録が完了した時点で
-  // registerToken()自身がこの解除要求を検知して後始末する。これなら呼び出し側の
-  // 待機時間(ログアウトのタイムアウト)と、登録完了を待つ内部処理が完全に分離
-  // される。
-  final Map<String, String> _pendingLogoutAuthTokens = {};
+  // 「待って直列化する」方式ではなく、イベント駆動で解決する: 進行中の登録
+  // 操作をFuture単位で覚えておき、その操作が完了した時点で得られる登録IDを
+  // 使って解除する(その操作に直接ぶら下げるだけで即座に返るので、呼び出し側の
+  // 待機時間=ログアウトのタイムアウトをブロックしない)。
+  //
+  // deviceTokenをキーにした単純なフラグ/トークンの保存だと、ログアウト時点で
+  // 進行中だった操作とは無関係な「次のログイン時の登録」まで誤って解除して
+  // しまう恐れがあるため、必ず「その時点で進行中だった特定の操作」自体
+  // (Futureのインスタンス)に結び付ける。
+  final Map<String, Future<String>> _inFlightRegistrations = {};
 
   @override
   Future<void> registerToken(String deviceToken, String platform) async {
+    final attempt = _registerAndSave(deviceToken, platform);
+    _inFlightRegistrations[deviceToken] = attempt;
+    try {
+      await attempt;
+    } finally {
+      // 自分より後に新しい登録操作が始まっていた場合は、そちらを消さない。
+      if (_inFlightRegistrations[deviceToken] == attempt) {
+        _inFlightRegistrations.remove(deviceToken);
+      }
+    }
+  }
+
+  Future<String> _registerAndSave(String deviceToken, String platform) async {
     final authToken = await _tokenLocalDataSource.readToken();
     if (authToken == null) {
       throw DeviceApiException('ログインが必要です');
@@ -55,18 +74,7 @@ class DeviceRepositoryImpl implements DeviceRepository {
       deviceToken: deviceToken,
       registrationId: registrationId,
     );
-
-    // 登録の通信中にログアウトの解除要求が来ていた場合、ここで即座に後始末する
-    // (ログアウト要求時点でまだ有効だったJWTを使う。今のJWTは既に失効・削除
-    // 済みの可能性があるため)。
-    final logoutAuthToken = _pendingLogoutAuthTokens.remove(deviceToken);
-    if (logoutAuthToken != null) {
-      await _performUnregister(
-        deviceToken: deviceToken,
-        registrationId: registrationId,
-        authToken: logoutAuthToken,
-      );
-    }
+    return registrationId;
   }
 
   @override
@@ -76,14 +84,30 @@ class DeviceRepositoryImpl implements DeviceRepository {
       throw DeviceApiException('ログインが必要です');
     }
 
+    final inFlightRegistration = _inFlightRegistrations[deviceToken];
+    if (inFlightRegistration != null) {
+      // ログアウト要求時点で進行中だった、まさにこの登録操作の結果を使って
+      // 解除する(保存済みの古い登録IDではなく)。登録自体が失敗した場合は
+      // 解除すべき対象も無いので何もしない。この操作に限定して結び付けている
+      // ため、後で始まる無関係な登録(次回ログイン等)には影響しない。
+      unawaited(
+        inFlightRegistration
+            .then(
+              (registrationId) => _performUnregister(
+                deviceToken: deviceToken,
+                registrationId: registrationId,
+                authToken: authToken,
+              ),
+            )
+            .catchError((_) {}),
+      );
+      return;
+    }
+
     final registrationId = await _registrationLocalDataSource
         .readRegistrationId(deviceToken);
     if (registrationId == null) {
-      // 登録の通信がまだ完了していない可能性があるため、「登録が無い」と断定
-      // せず、解除要求とJWTを記録しておく。registerToken()が完了した時点で
-      // 自動的に解除される。既にサーバー側にも本当に登録が無い場合は、
-      // registerToken()が呼ばれない限り何も起きない(解除すべき対象も無い)。
-      _pendingLogoutAuthTokens[deviceToken] = authToken;
+      // 登録記録が無く、進行中の登録も無いため、解除する対象がない。
       return;
     }
 
