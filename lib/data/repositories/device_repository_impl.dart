@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:kumayokeru_app/core/utils/jwt_decoder.dart';
 import 'package:kumayokeru_app/data/datasources/local/auth_token_local_datasource.dart';
 import 'package:kumayokeru_app/data/datasources/local/device_registration_local_datasource.dart';
@@ -11,6 +13,7 @@ class DeviceRepositoryImpl implements DeviceRepository {
     AuthTokenLocalDataSource? tokenLocalDataSource,
     DeviceRegistrationLocalDataSource? registrationLocalDataSource,
     PendingDeviceUnregisterLocalDataSource? pendingUnregisterLocalDataSource,
+    Duration? operationQueueTimeout,
   }) : _remoteDataSource = remoteDataSource ?? DeviceRemoteDataSource(),
        _tokenLocalDataSource =
            tokenLocalDataSource ?? AuthTokenLocalDataSource(),
@@ -18,16 +21,51 @@ class DeviceRepositoryImpl implements DeviceRepository {
            registrationLocalDataSource ?? DeviceRegistrationLocalDataSource(),
        _pendingUnregisterLocalDataSource =
            pendingUnregisterLocalDataSource ??
-           PendingDeviceUnregisterLocalDataSource();
+           PendingDeviceUnregisterLocalDataSource(),
+       _operationQueueTimeout =
+           operationQueueTimeout ?? const Duration(seconds: 5);
 
   final DeviceRemoteDataSource _remoteDataSource;
   final AuthTokenLocalDataSource _tokenLocalDataSource;
   final DeviceRegistrationLocalDataSource _registrationLocalDataSource;
   final PendingDeviceUnregisterLocalDataSource
   _pendingUnregisterLocalDataSource;
+  final Duration _operationQueueTimeout;
+
+  // registerToken()とunregisterToken()を直列化するためのキュー。これが無いと、
+  // 登録の通信が完了する前(登録IDをまだ保存していない間)にログアウトが解除を
+  // 試みた場合、「登録した記録が無い」と判断して何もせず終わってしまい、その後
+  // 登録が完了するとログアウト済みのアカウントに通知登録が残ってしまう。
+  // 解除は直前の登録(またはその逆)が完了するのを待ってから、その時点で保存
+  // されている最新の登録IDを見て動くようにする。
+  Future<void> _operationQueue = Future.value();
+
+  Future<T> _serialized<T>(Future<T> Function() operation) async {
+    final previous = _operationQueue;
+    final done = Completer<void>();
+    _operationQueue = done.future;
+    try {
+      // 前の操作の完了を待つが、待ちすぎて後続の操作まで止めないよう上限を
+      // 設ける。前の操作がこの後も裏で動き続けて遅れて完了しても、サーバー側の
+      // 世代チェック(routes/devices.ts)が新しい登録を保護してくれる。
+      await previous.timeout(_operationQueueTimeout);
+    } catch (_) {
+      // 前の操作の成否・タイムアウトはここでは関係ない(順序を保証するためだけ
+      // に待つ)。
+    }
+    try {
+      return await operation();
+    } finally {
+      done.complete();
+    }
+  }
 
   @override
-  Future<void> registerToken(String deviceToken, String platform) async {
+  Future<void> registerToken(String deviceToken, String platform) {
+    return _serialized(() => _registerToken(deviceToken, platform));
+  }
+
+  Future<void> _registerToken(String deviceToken, String platform) async {
     final authToken = await _tokenLocalDataSource.readToken();
     if (authToken == null) {
       throw DeviceApiException('ログインが必要です');
@@ -45,7 +83,11 @@ class DeviceRepositoryImpl implements DeviceRepository {
   }
 
   @override
-  Future<void> unregisterToken(String deviceToken) async {
+  Future<void> unregisterToken(String deviceToken) {
+    return _serialized(() => _unregisterToken(deviceToken));
+  }
+
+  Future<void> _unregisterToken(String deviceToken) async {
     final authToken = await _tokenLocalDataSource.readToken();
     if (authToken == null) {
       throw DeviceApiException('ログインが必要です');
@@ -78,7 +120,11 @@ class DeviceRepositoryImpl implements DeviceRepository {
   }
 
   @override
-  Future<void> retryPendingUnregister() async {
+  Future<void> retryPendingUnregister() {
+    return _serialized(_retryPendingUnregister);
+  }
+
+  Future<void> _retryPendingUnregister() async {
     final pending = await _pendingUnregisterLocalDataSource.read();
     if (pending == null) return;
 
