@@ -59,6 +59,23 @@ void main() {
       );
     });
 
+    test('緯度経度は小数点以下3桁に丸めて送信する(プライバシー配慮)', () async {
+      final mockClient = MockClient((request) async {
+        expect(request.url.queryParameters['lat'], '35.612');
+        expect(request.url.queryParameters['lon'], '139.235');
+        return http.Response(
+          jsonEncode({
+            'address': {'city': '八王子市'},
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+
+      final dataSource = GeocodingRemoteDataSource(client: mockClient);
+      await dataSource.reverseGeocode(lat: 35.612345, lng: 139.234567);
+    });
+
     test('住所情報が無い応答はGeocodingApiExceptionを投げる', () async {
       final mockClient = MockClient((request) async {
         return http.Response(

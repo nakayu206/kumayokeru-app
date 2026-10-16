@@ -5,7 +5,6 @@ import 'package:kumayokeru_app/domain/entities/group_member.dart';
 class GroupMemberModel {
   const GroupMemberModel({
     required this.userId,
-    required this.email,
     required this.name,
     required this.joinedAt,
   });
@@ -13,23 +12,16 @@ class GroupMemberModel {
   factory GroupMemberModel.fromJson(Map<String, dynamic> json) {
     return GroupMemberModel(
       userId: json['userId'] as String,
-      email: json['email'] as String,
-      name: json['name'] as String? ?? json['email'] as String,
+      name: json['name'] as String,
       joinedAt: DateTime.parse(json['joinedAt'] as String),
     );
   }
 
   final String userId;
-  final String email;
   final String name;
   final DateTime joinedAt;
 
   GroupMember toEntity() {
-    return GroupMember(
-      userId: userId,
-      email: email,
-      name: name,
-      joinedAt: joinedAt,
-    );
+    return GroupMember(userId: userId, name: name, joinedAt: joinedAt);
   }
 }

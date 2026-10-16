@@ -2,13 +2,11 @@
 class GroupMember {
   const GroupMember({
     required this.userId,
-    required this.email,
     required this.name,
     required this.joinedAt,
   });
 
   final String userId;
-  final String email;
   final String name;
   final DateTime joinedAt;
 }
