@@ -46,19 +46,42 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    await _tokenLocalDataSource.clearToken();
-    await _tokenLocalDataSource.clearName();
+    await _clearSession();
   }
 
   @override
   Future<AuthUser?> currentUser() async {
     final token = await _tokenLocalDataSource.readToken();
     if (token == null) return null;
-    final payload = decodeJwtPayload(token);
+
+    final Map<String, dynamic> payload;
+    try {
+      payload = decodeJwtPayload(token);
+    } on FormatException {
+      // 保存されたトークンが壊れている場合は、ログアウト状態として扱う。
+      await _clearSession();
+      return null;
+    }
+
+    final exp = payload['exp'] as int?;
+    if (exp != null &&
+        DateTime.now().isAfter(
+          DateTime.fromMillisecondsSinceEpoch(exp * 1000),
+        )) {
+      // 期限切れトークンをログイン済みとして復元しない。
+      await _clearSession();
+      return null;
+    }
+
     final email = payload['email'] as String;
     // 名前未キャッシュ(旧バージョンからの引き継ぎ等)はemailのローカル部で暫定表示する。
     final name = await _tokenLocalDataSource.readName() ?? email.split('@').first;
     return _userFromToken(token, name);
+  }
+
+  Future<void> _clearSession() async {
+    await _tokenLocalDataSource.clearToken();
+    await _tokenLocalDataSource.clearName();
   }
 
   @override

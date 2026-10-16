@@ -5,6 +5,9 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 abstract interface class PushNotificationService {
   /// 権限リクエスト・トークン取得(更新時も同じコールバック)・フォアグラウンド表示を行う。
   Future<void> initialize({required Future<void> Function(String token) onToken});
+
+  /// ログアウト時にサーバー側の登録解除で使う。未取得ならnull。
+  Future<String?> getCurrentToken();
 }
 
 /// フォアグラウンド受信はOSが自動表示しないため、flutter_local_notificationsで手動表示する。
@@ -44,6 +47,9 @@ class FirebaseCloudMessagingService implements PushNotificationService {
 
     FirebaseMessaging.onMessage.listen(_showForegroundNotification);
   }
+
+  @override
+  Future<String?> getCurrentToken() => _messaging.getToken();
 
   Future<void> _showForegroundNotification(RemoteMessage message) async {
     final notification = message.notification;

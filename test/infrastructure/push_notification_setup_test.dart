@@ -7,6 +7,7 @@ import 'package:kumayokeru_app/infrastructure/push_notification_setup.dart';
 
 class _FakePushNotificationService implements PushNotificationService {
   Future<void> Function(String token)? capturedOnToken;
+  String? currentToken;
 
   @override
   Future<void> initialize({
@@ -14,12 +15,17 @@ class _FakePushNotificationService implements PushNotificationService {
   }) async {
     capturedOnToken = onToken;
   }
+
+  @override
+  Future<String?> getCurrentToken() async => currentToken;
 }
 
 class _FakeDeviceRepository implements DeviceRepository {
   String? registeredToken;
   String? registeredPlatform;
+  String? unregisteredToken;
   bool shouldThrow = false;
+  bool shouldThrowOnUnregister = false;
 
   @override
   Future<void> registerToken(String deviceToken, String platform) async {
@@ -28,6 +34,14 @@ class _FakeDeviceRepository implements DeviceRepository {
     }
     registeredToken = deviceToken;
     registeredPlatform = platform;
+  }
+
+  @override
+  Future<void> unregisterToken(String deviceToken) async {
+    if (shouldThrowOnUnregister) {
+      throw DeviceApiException('解除に失敗しました(テスト用)');
+    }
+    unregisteredToken = deviceToken;
   }
 }
 
@@ -75,6 +89,50 @@ void main() {
       await setup.start();
 
       expect(service.capturedOnToken, isNull);
+    });
+
+    test('unregisterCurrentDevice()はAndroidなら現在のトークンをリポジトリから解除する', () async {
+      final service = _FakePushNotificationService()
+        ..currentToken = 'fake-fcm-token';
+      final repository = _FakeDeviceRepository();
+      final setup = PushNotificationSetup(
+        service,
+        repository,
+        isAndroid: () => true,
+      );
+
+      await setup.unregisterCurrentDevice();
+
+      expect(repository.unregisteredToken, 'fake-fcm-token');
+    });
+
+    test('unregisterCurrentDevice()はAndroid以外では何もしない', () async {
+      final service = _FakePushNotificationService()
+        ..currentToken = 'fake-fcm-token';
+      final repository = _FakeDeviceRepository();
+      final setup = PushNotificationSetup(
+        service,
+        repository,
+        isAndroid: () => false,
+      );
+
+      await setup.unregisterCurrentDevice();
+
+      expect(repository.unregisteredToken, isNull);
+    });
+
+    test('unregisterCurrentDevice()は解除に失敗しても例外を外に投げない', () async {
+      final service = _FakePushNotificationService()
+        ..currentToken = 'fake-fcm-token';
+      final repository = _FakeDeviceRepository()
+        ..shouldThrowOnUnregister = true;
+      final setup = PushNotificationSetup(
+        service,
+        repository,
+        isAndroid: () => true,
+      );
+
+      await setup.unregisterCurrentDevice();
     });
   });
 }

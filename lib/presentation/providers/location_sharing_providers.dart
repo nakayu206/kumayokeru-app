@@ -5,6 +5,7 @@ import 'package:kumayokeru_app/domain/entities/group_member.dart';
 import 'package:kumayokeru_app/domain/entities/member_location.dart';
 import 'package:kumayokeru_app/domain/entities/share_group.dart';
 import 'package:kumayokeru_app/domain/repositories/location_sharing_repository.dart';
+import 'package:kumayokeru_app/presentation/providers/auth_providers.dart';
 
 final locationSharingRepositoryProvider = Provider<LocationSharingRepository>(
   (ref) => LocationSharingRepositoryImpl(),
@@ -55,10 +56,15 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
 
   final LocationSharingRepository _repository;
 
+  // 非同期処理の完了を待つ間にprovider自体が作り直される(別ユーザーへの切り替え等)と
+  // 古いnotifierが破棄済みのままstateに書き込もうとして例外になるため、各awaitの後で
+  // 必ずmountedを確認する。
+
   Future<void> _loadGroup() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final groups = await _repository.listGroups();
+      if (!mounted) return;
       if (groups.isEmpty) {
         state = state.copyWith(isLoading: false);
         return;
@@ -66,7 +72,7 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
       state = state.copyWith(isLoading: false, group: groups.first);
       await refreshLocations();
     } on Exception catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      if (mounted) state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
   }
 
@@ -74,10 +80,11 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final group = await _repository.createGroup(name);
+      if (!mounted) return;
       state = state.copyWith(isLoading: false, group: group);
       await refreshLocations();
     } on Exception catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      if (mounted) state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
   }
 
@@ -87,10 +94,11 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       await _repository.inviteMember(group.id, email);
+      if (!mounted) return;
       state = state.copyWith(isLoading: false);
       await refreshLocations();
     } on Exception catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      if (mounted) state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
   }
 
@@ -98,9 +106,10 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
     state = state.copyWith(errorMessage: null);
     try {
       await _repository.postLocation(lat: lat, lng: lng);
+      if (!mounted) return;
       await refreshLocations();
     } on Exception catch (e) {
-      state = state.copyWith(errorMessage: e.toString());
+      if (mounted) state = state.copyWith(errorMessage: e.toString());
     }
   }
 
@@ -111,9 +120,10 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
     state = state.copyWith(errorMessage: null);
     try {
       await _repository.sendSos(groupId: group.id, lat: lat, lng: lng);
+      if (!mounted) return;
       await refreshLocations();
     } on Exception catch (e) {
-      state = state.copyWith(errorMessage: e.toString());
+      if (mounted) state = state.copyWith(errorMessage: e.toString());
     }
   }
 
@@ -126,12 +136,13 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
         _repository.listMembers(group.id),
         _repository.pollLocations(group.id),
       ]);
+      if (!mounted) return;
       state = state.copyWith(
         members: results[0] as List<GroupMember>,
         memberLocations: results[1] as List<MemberLocation>,
       );
     } on Exception catch (e) {
-      state = state.copyWith(errorMessage: e.toString());
+      if (mounted) state = state.copyWith(errorMessage: e.toString());
     }
   }
 
@@ -142,10 +153,11 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       await _repository.removeMember(group.id, userId);
+      if (!mounted) return;
       state = state.copyWith(isLoading: false);
       await refreshLocations();
     } on Exception catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      if (mounted) state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
   }
 
@@ -157,15 +169,18 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       await _repository.removeMember(group.id, selfUserId);
+      if (!mounted) return;
       state = const LocationSharingState();
     } on Exception catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      if (mounted) state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
   }
 }
 
 final locationSharingProvider =
     StateNotifierProvider<LocationSharingNotifier, LocationSharingState>((ref) {
+      // ログインユーザーが変わるたびに作り直す(別アカウントの情報が残らないようにするため)。
+      ref.watch(authProvider.select((s) => s.user?.id));
       return LocationSharingNotifier(
         ref.watch(locationSharingRepositoryProvider),
       );

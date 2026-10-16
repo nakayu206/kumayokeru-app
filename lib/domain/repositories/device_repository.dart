@@ -3,4 +3,7 @@
 abstract interface class DeviceRepository {
   /// platformは"android"か"ios"。
   Future<void> registerToken(String deviceToken, String platform);
+
+  /// ログアウト時にこの端末へのプッシュ通知を止めるために呼ぶ。
+  Future<void> unregisterToken(String deviceToken);
 }

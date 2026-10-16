@@ -35,4 +35,18 @@ class PushNotificationSetup {
       debugPrint('プッシュ通知の初期化に失敗しました(プッシュ通知は利用できません): $e');
     }
   }
+
+  /// ログアウト時にこの端末へのプッシュ通知を止める。失敗してもログアウト処理は
+  /// 続行する(トークンの有効期限切れ等で認証前に呼ばれる可能性があるため)。
+  Future<void> unregisterCurrentDevice() async {
+    if (!_isAndroid()) return;
+
+    try {
+      final token = await _service.getCurrentToken();
+      if (token == null) return;
+      await _deviceRepository.unregisterToken(token);
+    } on Exception catch (e) {
+      debugPrint('デバイストークンの登録解除に失敗しました: $e');
+    }
+  }
 }

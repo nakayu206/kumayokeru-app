@@ -1,0 +1,13 @@
+## ストア提出用の本番署名鍵の設定テンプレート。
+## このファイルをコピーして android/key.properties を作る(key.propertiesはGit管理対象外)。
+##
+## 鍵の作り方: https://flutter.dev/to/generate-android-keystore
+##
+## storeFile, storePassword, keyAlias, keyPassword は漏洩すると
+## アプリを乗っ取られる可能性がある重要な秘密情報のため、
+## このリポジトリやチャットには絶対に貼らないこと。
+
+storeFile=/path/to/kumayokeru-release.jks
+storePassword=
+keyAlias=
+keyPassword=

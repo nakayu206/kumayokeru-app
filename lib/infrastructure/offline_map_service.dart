@@ -7,10 +7,18 @@ import 'package:path_provider/path_provider.dart';
 
 /// タイルの一括ダウンロード進捗。
 class TileDownloadProgress {
-  const TileDownloadProgress({required this.completed, required this.total});
+  const TileDownloadProgress({
+    required this.completed,
+    required this.total,
+    this.failed = 0,
+  });
 
   final int completed;
   final int total;
+
+  /// 取得に失敗した枚数(completedに含まれる)。0より大きければ、地図が
+  /// 完全には保存できていない(山中で表示できないタイルがある)ことを示す。
+  final int failed;
 
   double get ratio => total == 0 ? 0 : completed / total;
   bool get isDone => total != 0 && completed >= total;
@@ -115,6 +123,7 @@ class FileOfflineMapService implements OfflineMapService {
 
     yield TileDownloadProgress(completed: 0, total: tiles.length);
     var completed = 0;
+    var failed = 0;
     for (final (z, x, y) in tiles) {
       try {
         final url = urlTemplate
@@ -123,10 +132,16 @@ class FileOfflineMapService implements OfflineMapService {
             .replaceAll('{y}', '$y');
         await loadTile(z: z, x: x, y: y, url: url);
       } on Exception {
-        // 1タイルの失敗で全体を止めない(電波不良の山中を想定)。
+        // 1タイルの失敗で全体を止めない(電波不良の山中を想定)が、
+        // 「完了」扱いにはせずfailedとして記録し、呼び出し側に伝える。
+        failed++;
       }
       completed++;
-      yield TileDownloadProgress(completed: completed, total: tiles.length);
+      yield TileDownloadProgress(
+        completed: completed,
+        total: tiles.length,
+        failed: failed,
+      );
     }
   }
 

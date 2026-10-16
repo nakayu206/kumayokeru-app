@@ -4,6 +4,8 @@ import 'package:kumayokeru_app/data/datasources/remote/auth_remote_datasource.da
 import 'package:kumayokeru_app/data/repositories/auth_repository_impl.dart';
 import 'package:kumayokeru_app/domain/entities/auth_user.dart';
 import 'package:kumayokeru_app/domain/repositories/auth_repository.dart';
+import 'package:kumayokeru_app/infrastructure/push_notification_setup.dart';
+import 'package:kumayokeru_app/presentation/providers/push_notification_providers.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl();
@@ -29,11 +31,13 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier(this._repository) : super(const AuthState()) {
+  AuthNotifier(this._repository, this._pushNotificationSetup)
+    : super(const AuthState()) {
     _restoreSession();
   }
 
   final AuthRepository _repository;
+  final PushNotificationSetup _pushNotificationSetup;
 
   Future<void> _restoreSession() async {
     final user = await _repository.currentUser();
@@ -71,11 +75,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    // サーバーに残ったデバイストークンの登録を先に解除する(JWTが必要なため)。
+    await _pushNotificationSetup.unregisterCurrentDevice();
     await _repository.logout();
     state = const AuthState();
   }
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(ref.watch(authRepositoryProvider));
+  return AuthNotifier(
+    ref.watch(authRepositoryProvider),
+    ref.watch(pushNotificationSetupProvider),
+  );
 });
