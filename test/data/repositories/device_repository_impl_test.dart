@@ -374,6 +374,92 @@ void main() {
       expect(pendingStore.pending, isNull);
     });
 
+    test('既存の登録(古い世代)がある状態で、進行中の再登録が失敗しても、既存の'
+        '登録を解除する(「登録失敗=解除対象なし」は初回登録にしか成立しない)', () async {
+      final remote = _FakeRemoteDataSource()..nextRegistrationId = 'reg-1';
+      final registrationStore = _FakeRegistrationLocalDataSource();
+      final pendingStore = _FakePendingUnregisterLocalDataSource();
+      final repository = DeviceRepositoryImpl(
+        remoteDataSource: remote,
+        tokenLocalDataSource: _FakeTokenLocalDataSource()..token = 'fake-token',
+        registrationLocalDataSource: registrationStore,
+        pendingUnregisterLocalDataSource: pendingStore,
+      );
+
+      // 1. 最初の登録(reg-1)が既に完了している。
+      await repository.registerToken('fcm-token', 'android');
+      expect(remote.serverRegistrations['fcm-token'], 'reg-1');
+
+      // 2. 同じトークンの再登録が進行中(応答待ち)になり、これが失敗する。
+      final hangingRegister = Completer<void>();
+      remote.hangingRegisterCompleter = hangingRegister;
+      remote.shouldThrowOnRegister = true;
+      final reregisterFuture = repository.registerToken('fcm-token', 'android');
+      await pumpEventQueue();
+
+      // 3. その間にログアウトが解除を試みる(進行中の再登録に結び付けて
+      // 記録される)。
+      await repository.unregisterToken('fcm-token');
+
+      // 4. 再登録が(通信エラー等で)失敗する。
+      hangingRegister.complete();
+      await expectLater(reregisterFuture, throwsA(isA<DeviceApiException>()));
+      await pumpEventQueue();
+
+      // 再登録の失敗は「登録が無い」ことを意味しない。既存のreg-1が
+      // 解除されており、通知登録が残っていない。
+      expect(remote.serverRegistrations['fcm-token'], isNull);
+      expect(remote.unregisterAttempts, ['reg-1']);
+    });
+
+    test('同じトークンへの並行登録はすべて直列化され、ログアウト時点で最後に'
+        '呼ばれた登録だけが解除対象になる(片方しか追跡できず取り逃すことがない)', () async {
+      final remote = _FakeRemoteDataSource();
+      final registrationStore = _FakeRegistrationLocalDataSource();
+      final pendingStore = _FakePendingUnregisterLocalDataSource();
+      final repository = DeviceRepositoryImpl(
+        remoteDataSource: remote,
+        tokenLocalDataSource: _FakeTokenLocalDataSource()..token = 'fake-token',
+        registrationLocalDataSource: registrationStore,
+        pendingUnregisterLocalDataSource: pendingStore,
+      );
+
+      // 1. 登録A(reg-A)が進行中(応答待ち)になる。
+      final hangingA = Completer<void>();
+      remote.hangingRegisterCompleter = hangingA;
+      remote.nextRegistrationId = 'reg-A';
+      final registerAFuture = repository.registerToken('fcm-token', 'android');
+      await pumpEventQueue();
+
+      // 2. Aが完了する前に、同じトークンへの登録B(例えば重複した
+      // onTokenコールバック等)が呼ばれる。直列化により、Bはまだ自分の
+      // 通信を始めていない(Aの完了待ち)。
+      remote.nextRegistrationId = 'reg-B';
+      final registerBFuture = repository.registerToken('fcm-token', 'android');
+      await pumpEventQueue();
+      expect(remote.capturedDeviceToken, isNull);
+
+      // 3. その間にログアウトが解除を試みる。直列化により「最後に呼ばれた
+      // 登録操作」であるBが解除対象として追跡される。
+      await repository.unregisterToken('fcm-token');
+      expect(remote.unregisterAttempts, isEmpty);
+
+      // 4. Aの応答が到着し、直列化により続けてBの通信も行われる
+      // (Aが先にサーバーへ反映されてから、Bに上書きされる)。
+      remote.hangingRegisterCompleter = null;
+      hangingA.complete();
+      await registerAFuture;
+      await registerBFuture;
+      await pumpEventQueue();
+
+      // Bが解除対象として正しく解除されている。並行登録のどちらか一方
+      // (片方)しか追跡できない実装だったなら、Aを追跡したまま先に解除
+      // されBがサーバーに残ってしまっていたはずだが、直列化によりそれが
+      // 起きない。
+      expect(remote.serverRegistrations['fcm-token'], isNull);
+      expect(remote.unregisterAttempts, ['reg-B']);
+    });
+
     test('保存済みの登録ID(古い世代)があっても、再登録が進行中ならその新しい'
         '登録を解除対象にする(古い世代だけを解除して取り逃さない)', () async {
       final remote = _FakeRemoteDataSource()..nextRegistrationId = 'reg-1';

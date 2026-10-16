@@ -45,10 +45,17 @@ class DeviceRepositoryImpl implements DeviceRepository {
   // (Futureのインスタンス)に結び付ける。
   final Map<String, Future<String>> _inFlightRegistrations = {};
 
+  // 同じdeviceTokenに対するregisterToken()呼び出しを直列化するためのチェーン。
+  // これが無いと同じトークンへの複数の登録が並行して走り得て、
+  // _inFlightRegistrationsのMap代入が上書きされてしまい、unregisterToken()は
+  // 最後に呼ばれたものしか追跡できない。その間に先行する登録がサーバー側で
+  // 後から確定すると、その登録が解除されずに残ってしまう。1トークンにつき
+  // 常に1件しか実行中にならないよう、ここで順番待ちさせる。
+  final Map<String, Future<void>> _registrationChainTails = {};
+
   @override
   Future<void> registerToken(String deviceToken, String platform) async {
-    final attempt = _registerAndSave(deviceToken, platform);
-    _inFlightRegistrations[deviceToken] = attempt;
+    final attempt = _enqueueRegistration(deviceToken, platform);
     try {
       await attempt;
     } finally {
@@ -57,6 +64,21 @@ class DeviceRepositoryImpl implements DeviceRepository {
         _inFlightRegistrations.remove(deviceToken);
       }
     }
+  }
+
+  Future<String> _enqueueRegistration(String deviceToken, String platform) {
+    final previous = _registrationChainTails[deviceToken] ?? Future.value();
+    final done = Completer<void>();
+    _registrationChainTails[deviceToken] = done.future;
+
+    final attempt = previous
+        // 前の登録の成否はここでは関係ない(順番を守るためだけに待つ)。
+        .catchError((_) {})
+        .then((_) => _registerAndSave(deviceToken, platform));
+    attempt.then((_) => done.complete(), onError: (_) => done.complete());
+
+    _inFlightRegistrations[deviceToken] = attempt;
+    return attempt;
   }
 
   Future<String> _registerAndSave(String deviceToken, String platform) async {
@@ -87,9 +109,8 @@ class DeviceRepositoryImpl implements DeviceRepository {
     final inFlightRegistration = _inFlightRegistrations[deviceToken];
     if (inFlightRegistration != null) {
       // ログアウト要求時点で進行中だった、まさにこの登録操作の結果を使って
-      // 解除する(保存済みの古い登録IDではなく)。登録自体が失敗した場合は
-      // 解除すべき対象も無いので何もしない。この操作に限定して結び付けている
-      // ため、後で始まる無関係な登録(次回ログイン等)には影響しない。
+      // 解除する(保存済みの古い登録IDではなく)。この操作に限定して結び付けて
+      // いるため、後で始まる無関係な登録(次回ログイン等)には影響しない。
       unawaited(
         inFlightRegistration
             .then(
@@ -99,7 +120,21 @@ class DeviceRepositoryImpl implements DeviceRepository {
                 authToken: authToken,
               ),
             )
-            .catchError((_) {}),
+            .catchError((_) async {
+              // 進行中だった登録(再登録)自体が失敗しても、それ以前から登録
+              // 済みだった世代が残っている可能性があるため、現在保存されている
+              // 登録ID(あれば)を解除する。「登録が無い」と言えるのは最初の
+              // 登録がまだ一度も成功していない場合だけ。
+              final existingRegistrationId = await _registrationLocalDataSource
+                  .readRegistrationId(deviceToken);
+              if (existingRegistrationId != null) {
+                await _performUnregister(
+                  deviceToken: deviceToken,
+                  registrationId: existingRegistrationId,
+                  authToken: authToken,
+                );
+              }
+            }),
       );
       return;
     }
