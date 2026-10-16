@@ -83,10 +83,11 @@ void main() {
         expect(request.url.path, '/me');
         expect(request.method, 'PATCH');
         expect(request.headers['authorization'], 'Bearer fake-jwt-token');
-        return _jsonResponse(
-          {'id': 'user-1', 'email': 'a@example.com', 'name': '次郎'},
-          200,
-        );
+        return _jsonResponse({
+          'id': 'user-1',
+          'email': 'a@example.com',
+          'name': '次郎',
+        }, 200);
       });
 
       final dataSource = AuthRemoteDataSource(client: mockClient);

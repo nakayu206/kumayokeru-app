@@ -11,6 +11,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   AppConfig.setFlavor(Flavor.dev);
   await initFirebase();
+  // ログイン後の新規デバイストークン登録と競合しないよう、ここで完了させる。
+  await retryPendingDeviceUnregister();
   final presenceNotificationHandler =
       await initPresenceNotificationAudioHandler();
   runApp(

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -12,6 +13,9 @@ class PushNotificationSetup {
     this._deviceRepository, {
     bool Function()? isAndroid,
   }) : _isAndroid = isAndroid ?? (() => Platform.isAndroid);
+
+  /// ログアウト処理自体を長時間ブロックしないための、解除通信の待機上限。
+  static const _unregisterTimeout = Duration(seconds: 5);
 
   final PushNotificationService _service;
   final DeviceRepository _deviceRepository;
@@ -38,15 +42,37 @@ class PushNotificationSetup {
 
   /// ログアウト時にこの端末へのプッシュ通知を止める。失敗してもログアウト処理は
   /// 続行する(トークンの有効期限切れ等で認証前に呼ばれる可能性があるため)。
+  /// 電波不良時にログアウト自体が止まらないよう、待機時間に上限を設ける。
   Future<void> unregisterCurrentDevice() async {
     if (!_isAndroid()) return;
 
     try {
-      final token = await _service.getCurrentToken();
+      final token = await _service.getCurrentToken().timeout(
+        _unregisterTimeout,
+      );
       if (token == null) return;
-      await _deviceRepository.unregisterToken(token);
+      await _deviceRepository
+          .unregisterToken(token)
+          .timeout(_unregisterTimeout);
     } on Exception catch (e) {
-      debugPrint('デバイストークンの登録解除に失敗しました: $e');
+      debugPrint('デバイストークンの登録解除に失敗しました(次回起動時に再試行): $e');
+    }
+  }
+
+  /// 前回のunregisterCurrentDevice()が失敗して残っているトークンがあれば
+  /// 再試行する。ログイン状態に関わらず、アプリ起動時に呼んでよい。
+  /// start()(ログイン後の新規登録)より必ず先に完了させること。そうしないと、
+  /// 同じデバイストークンに対する古い解除リクエストが新しい登録を後から
+  /// 消してしまう競合が起きる。
+  Future<void> retryPendingUnregister() async {
+    if (!_isAndroid()) return;
+
+    try {
+      await _deviceRepository.retryPendingUnregister().timeout(
+        _unregisterTimeout,
+      );
+    } on Exception catch (e) {
+      debugPrint('デバイストークンの登録解除の再試行に失敗しました: $e');
     }
   }
 }

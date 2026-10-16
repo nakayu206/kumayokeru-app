@@ -228,9 +228,9 @@ class _SightingMapPageState extends ConsumerState<SightingMapPage> {
     if (!context.mounted) return;
 
     if (position == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('現在地を取得できませんでした')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('現在地を取得できませんでした')));
       return;
     }
 

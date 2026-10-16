@@ -25,7 +25,9 @@ class DeviceRemoteDataSource {
   final http.Client _client;
   final Uri _baseUrl;
 
-  Future<void> registerToken(
+  /// 戻り値はサーバー側の登録ID(世代番号)。再登録のたびに新しい値になり、
+  /// unregisterToken()の世代チェックに使う(routes/devices.ts参照)。
+  Future<String> registerToken(
     String authToken, {
     required String deviceToken,
     required String platform,
@@ -49,9 +51,21 @@ class DeviceRemoteDataSource {
     if (response.statusCode != 201) {
       throw DeviceApiException(_errorMessage(response));
     }
+
+    final body =
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    return body['id'] as String;
   }
 
-  Future<void> unregisterToken(String authToken, {required String deviceToken}) async {
+  /// registrationIdはregisterToken()が返した登録IDを指定する。解除が遅延している
+  /// 間に同じdeviceTokenが再登録されていた場合、サーバー側はこのIDが現在の登録と
+  /// 一致しない限り削除しない(世代チェック)。その場合・既に未登録の場合は404を
+  /// 返すが、いずれも「対象が無い=既に解決済み」とみなしてよいため例外にしない。
+  Future<void> unregisterToken(
+    String authToken, {
+    required String deviceToken,
+    required String registrationId,
+  }) async {
     final uri = _baseUrl.replace(path: '/devices');
 
     http.Response response;
@@ -62,15 +76,19 @@ class DeviceRemoteDataSource {
           'authorization': 'Bearer $authToken',
           'content-type': 'application/json',
         },
-        body: jsonEncode({'token': deviceToken}),
+        body: jsonEncode({
+          'token': deviceToken,
+          'registrationId': registrationId,
+        }),
       );
     } on Exception catch (e) {
       throw DeviceApiException('通信エラーが発生しました: $e');
     }
 
-    if (response.statusCode != 204) {
-      throw DeviceApiException(_errorMessage(response));
+    if (response.statusCode == 204 || response.statusCode == 404) {
+      return;
     }
+    throw DeviceApiException(_errorMessage(response));
   }
 
   String _errorMessage(http.Response response) {

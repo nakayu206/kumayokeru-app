@@ -50,9 +50,7 @@ void main() {
           'exp': futureExp,
         })
         ..name = 'たろう';
-      final repository = AuthRepositoryImpl(
-        tokenLocalDataSource: tokenSource,
-      );
+      final repository = AuthRepositoryImpl(tokenLocalDataSource: tokenSource);
 
       final user = await repository.currentUser();
 
@@ -74,9 +72,7 @@ void main() {
           'email': 'taro@example.com',
           'exp': pastExp,
         });
-      final repository = AuthRepositoryImpl(
-        tokenLocalDataSource: tokenSource,
-      );
+      final repository = AuthRepositoryImpl(tokenLocalDataSource: tokenSource);
 
       final user = await repository.currentUser();
 
@@ -87,9 +83,7 @@ void main() {
     test('壊れた保存トークンは例外にせず、ログアウト状態として扱う', () async {
       final tokenSource = _FakeTokenLocalDataSource()
         ..token = 'not-a-valid-jwt';
-      final repository = AuthRepositoryImpl(
-        tokenLocalDataSource: tokenSource,
-      );
+      final repository = AuthRepositoryImpl(tokenLocalDataSource: tokenSource);
 
       final user = await repository.currentUser();
 

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kumayokeru_app/data/datasources/remote/device_remote_datasource.dart';
@@ -26,6 +29,9 @@ class _FakeDeviceRepository implements DeviceRepository {
   String? unregisteredToken;
   bool shouldThrow = false;
   bool shouldThrowOnUnregister = false;
+  bool shouldHangOnUnregister = false;
+  bool retryPendingUnregisterCalled = false;
+  bool shouldHangOnRetryPendingUnregister = false;
 
   @override
   Future<void> registerToken(String deviceToken, String platform) async {
@@ -38,10 +44,22 @@ class _FakeDeviceRepository implements DeviceRepository {
 
   @override
   Future<void> unregisterToken(String deviceToken) async {
+    if (shouldHangOnUnregister) {
+      // 通信がタイムアウトする状況を模すため、永遠に完了しないFutureを返す。
+      return Completer<void>().future;
+    }
     if (shouldThrowOnUnregister) {
       throw DeviceApiException('解除に失敗しました(テスト用)');
     }
     unregisteredToken = deviceToken;
+  }
+
+  @override
+  Future<void> retryPendingUnregister() async {
+    retryPendingUnregisterCalled = true;
+    if (shouldHangOnRetryPendingUnregister) {
+      return Completer<void>().future;
+    }
   }
 }
 
@@ -133,6 +151,77 @@ void main() {
       );
 
       await setup.unregisterCurrentDevice();
+    });
+
+    test('unregisterCurrentDevice()は通信が長引いてもタイムアウトしてログアウトをブロックしない', () {
+      fakeAsync((async) {
+        final service = _FakePushNotificationService()
+          ..currentToken = 'fake-fcm-token';
+        final repository = _FakeDeviceRepository()
+          ..shouldHangOnUnregister = true;
+        final setup = PushNotificationSetup(
+          service,
+          repository,
+          isAndroid: () => true,
+        );
+
+        var completed = false;
+        unawaited(
+          setup.unregisterCurrentDevice().then((_) => completed = true),
+        );
+
+        async.elapse(const Duration(seconds: 10));
+
+        expect(completed, isTrue);
+      });
+    });
+
+    test('retryPendingUnregister()はAndroidならリポジトリの再試行を呼び出す', () async {
+      final service = _FakePushNotificationService();
+      final repository = _FakeDeviceRepository();
+      final setup = PushNotificationSetup(
+        service,
+        repository,
+        isAndroid: () => true,
+      );
+
+      await setup.retryPendingUnregister();
+
+      expect(repository.retryPendingUnregisterCalled, isTrue);
+    });
+
+    test('retryPendingUnregister()は通信が長引いてもタイムアウトする(起動時に新規登録より先に完了させるため)', () {
+      fakeAsync((async) {
+        final service = _FakePushNotificationService();
+        final repository = _FakeDeviceRepository()
+          ..shouldHangOnRetryPendingUnregister = true;
+        final setup = PushNotificationSetup(
+          service,
+          repository,
+          isAndroid: () => true,
+        );
+
+        var completed = false;
+        unawaited(setup.retryPendingUnregister().then((_) => completed = true));
+
+        async.elapse(const Duration(seconds: 10));
+
+        expect(completed, isTrue);
+      });
+    });
+
+    test('retryPendingUnregister()はAndroid以外では何もしない', () async {
+      final service = _FakePushNotificationService();
+      final repository = _FakeDeviceRepository();
+      final setup = PushNotificationSetup(
+        service,
+        repository,
+        isAndroid: () => false,
+      );
+
+      await setup.retryPendingUnregister();
+
+      expect(repository.retryPendingUnregisterCalled, isFalse);
     });
   });
 }
