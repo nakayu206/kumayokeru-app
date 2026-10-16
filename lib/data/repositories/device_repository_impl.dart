@@ -1,5 +1,6 @@
 import 'package:kumayokeru_app/core/utils/jwt_decoder.dart';
 import 'package:kumayokeru_app/data/datasources/local/auth_token_local_datasource.dart';
+import 'package:kumayokeru_app/data/datasources/local/device_registration_local_datasource.dart';
 import 'package:kumayokeru_app/data/datasources/local/pending_device_unregister_local_datasource.dart';
 import 'package:kumayokeru_app/data/datasources/remote/device_remote_datasource.dart';
 import 'package:kumayokeru_app/domain/repositories/device_repository.dart';
@@ -8,16 +9,20 @@ class DeviceRepositoryImpl implements DeviceRepository {
   DeviceRepositoryImpl({
     DeviceRemoteDataSource? remoteDataSource,
     AuthTokenLocalDataSource? tokenLocalDataSource,
+    DeviceRegistrationLocalDataSource? registrationLocalDataSource,
     PendingDeviceUnregisterLocalDataSource? pendingUnregisterLocalDataSource,
   }) : _remoteDataSource = remoteDataSource ?? DeviceRemoteDataSource(),
        _tokenLocalDataSource =
            tokenLocalDataSource ?? AuthTokenLocalDataSource(),
+       _registrationLocalDataSource =
+           registrationLocalDataSource ?? DeviceRegistrationLocalDataSource(),
        _pendingUnregisterLocalDataSource =
            pendingUnregisterLocalDataSource ??
            PendingDeviceUnregisterLocalDataSource();
 
   final DeviceRemoteDataSource _remoteDataSource;
   final AuthTokenLocalDataSource _tokenLocalDataSource;
+  final DeviceRegistrationLocalDataSource _registrationLocalDataSource;
   final PendingDeviceUnregisterLocalDataSource
   _pendingUnregisterLocalDataSource;
 
@@ -27,10 +32,15 @@ class DeviceRepositoryImpl implements DeviceRepository {
     if (authToken == null) {
       throw DeviceApiException('ログインが必要です');
     }
-    await _remoteDataSource.registerToken(
+    final registrationId = await _remoteDataSource.registerToken(
       authToken,
       deviceToken: deviceToken,
       platform: platform,
+    );
+    // 解除時の世代チェック用に、この登録のIDを覚えておく。
+    await _registrationLocalDataSource.save(
+      deviceToken: deviceToken,
+      registrationId: registrationId,
     );
   }
 
@@ -41,17 +51,27 @@ class DeviceRepositoryImpl implements DeviceRepository {
       throw DeviceApiException('ログインが必要です');
     }
 
+    final registrationId = await _registrationLocalDataSource
+        .readRegistrationId(deviceToken);
+    if (registrationId == null) {
+      // この端末でこのトークンを登録した記録が無い(登録前にログアウトした等)ため、
+      // サーバー側にも対応する登録は無いはずで、解除する対象がない。
+      return;
+    }
+
     // 通信を始める前に退避しておく(成功した場合のみ後で消す)。失敗時にだけ保存する
     // 形だと、呼び出し側のタイムアウトやアプリ終了で通信の完了を待てなかった場合に
     // 保存されず、再試行の手がかりを失ってしまう。
     await _pendingUnregisterLocalDataSource.save(
       deviceToken: deviceToken,
+      registrationId: registrationId,
       authToken: authToken,
     );
 
     await _remoteDataSource.unregisterToken(
       authToken,
       deviceToken: deviceToken,
+      registrationId: registrationId,
     );
 
     await _pendingUnregisterLocalDataSource.clear();
@@ -75,9 +95,12 @@ class DeviceRepositoryImpl implements DeviceRepository {
     }
 
     try {
+      // registrationIdは退避した時点のものを使う(世代チェックにより、再登録済み
+      // なら削除されないため、新しい登録を誤って消す心配はない)。
       await _remoteDataSource.unregisterToken(
         authToken,
         deviceToken: pending.deviceToken,
+        registrationId: pending.registrationId,
       );
       await _pendingUnregisterLocalDataSource.clear();
     } on DeviceApiException {

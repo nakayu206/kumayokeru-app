@@ -29,11 +29,13 @@ void main() {
 
       final dataSource = DeviceRemoteDataSource(client: mockClient);
 
-      await dataSource.registerToken(
+      final registrationId = await dataSource.registerToken(
         'fake-token',
         deviceToken: 'fcm-token',
         platform: 'android',
       );
+
+      expect(registrationId, 'device-1');
     });
 
     test('201以外の応答はDeviceApiExceptionを投げる', () async {
@@ -50,6 +52,62 @@ void main() {
           'fake-token',
           deviceToken: 'fcm-token',
           platform: 'invalid',
+        ),
+        throwsA(isA<DeviceApiException>()),
+      );
+    });
+
+    test(
+      'unregisterToken()はAuthorizationヘッダーとregistrationIdを付与してDELETE /devicesを叩く',
+      () async {
+        final mockClient = MockClient((request) async {
+          expect(request.method, 'DELETE');
+          expect(request.url.path, '/devices');
+          expect(request.headers['authorization'], 'Bearer fake-token');
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          expect(body['token'], 'fcm-token');
+          expect(body['registrationId'], 'device-1');
+          return http.Response('', 204);
+        });
+
+        final dataSource = DeviceRemoteDataSource(client: mockClient);
+
+        await dataSource.unregisterToken(
+          'fake-token',
+          deviceToken: 'fcm-token',
+          registrationId: 'device-1',
+        );
+      },
+    );
+
+    test('404(世代チェックで対象が無い・既に未登録)は「解決済み」として例外にしない', () async {
+      final mockClient = MockClient((request) async {
+        return _jsonResponse({
+          'error': '指定されたtoken・registrationIdの組み合わせは登録されていません',
+        }, 404);
+      });
+
+      final dataSource = DeviceRemoteDataSource(client: mockClient);
+
+      await dataSource.unregisterToken(
+        'fake-token',
+        deviceToken: 'fcm-token',
+        registrationId: 'stale-id',
+      );
+    });
+
+    test('204・404以外の応答はDeviceApiExceptionを投げる', () async {
+      final mockClient = MockClient((request) async {
+        return _jsonResponse({'error': 'server error'}, 500);
+      });
+
+      final dataSource = DeviceRemoteDataSource(client: mockClient);
+
+      expect(
+        () => dataSource.unregisterToken(
+          'fake-token',
+          deviceToken: 'fcm-token',
+          registrationId: 'device-1',
         ),
         throwsA(isA<DeviceApiException>()),
       );
