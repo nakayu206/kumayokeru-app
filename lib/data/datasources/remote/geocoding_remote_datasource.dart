@@ -29,8 +29,10 @@ class GeocodingRemoteDataSource {
     final uri = _baseUrl.replace(
       path: '/reverse',
       queryParameters: {
-        'lat': lat.toString(),
-        'lon': lng.toString(),
+        // 道路・地区名程度の粒度しか使わないため、外部送信前に丸めて精密な現在地を
+        // 渡さないようにする(小数点以下3桁 ≈ 111m)。
+        'lat': lat.toStringAsFixed(3),
+        'lon': lng.toStringAsFixed(3),
         'format': 'json',
         'accept-language': 'ja',
         'zoom': '17',

@@ -31,8 +31,10 @@ class WeatherRemoteDataSource {
     final uri = _baseUrl.replace(
       path: '/v1/forecast',
       queryParameters: {
-        'latitude': lat.toString(),
-        'longitude': lng.toString(),
+        // 天気は~1km程度の精度で十分なため、外部送信前に丸めて精密な現在地を
+        // 渡さないようにする(小数点以下2桁 ≈ 1.1km)。
+        'latitude': lat.toStringAsFixed(2),
+        'longitude': lng.toStringAsFixed(2),
         'current':
             'temperature_2m,relative_humidity_2m,precipitation,weather_code,wind_speed_10m',
         'timezone': 'Asia/Tokyo',

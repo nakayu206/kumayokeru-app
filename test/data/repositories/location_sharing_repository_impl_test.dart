@@ -65,7 +65,7 @@ class _FakeRemoteDataSource extends LocationSharingRemoteDataSource {
     return [
       {
         'userId': 'user-2',
-        'email': 'invited@example.com',
+        'name': 'invited',
         'joinedAt': '2026-07-25T06:30:00+09:00',
       },
     ];
@@ -140,7 +140,7 @@ void main() {
 
       expect(remote.capturedToken, 'fake-token');
       expect(members, hasLength(1));
-      expect(members.first.email, 'invited@example.com');
+      expect(members.first.name, 'invited');
     });
   });
 }

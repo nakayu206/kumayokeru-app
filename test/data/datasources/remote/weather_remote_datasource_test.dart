@@ -8,12 +8,13 @@ import 'package:kumayokeru_app/data/datasources/remote/weather_remote_datasource
 
 void main() {
   group('WeatherRemoteDataSource.fetchCurrentWeather', () {
-    test('緯度経度をクエリに含めてGETし、200応答をパースする', () async {
+    test('緯度経度を小数点以下2桁に丸めてクエリに含めてGETし、200応答をパースする', () async {
       final mockClient = MockClient((request) async {
         expect(request.method, 'GET');
         expect(request.url.path, '/v1/forecast');
-        expect(request.url.queryParameters['latitude'], '35.6895');
-        expect(request.url.queryParameters['longitude'], '139.6917');
+        // 外部送信時は精密な現在地を渡さないよう丸める(プライバシー配慮)。
+        expect(request.url.queryParameters['latitude'], '35.69');
+        expect(request.url.queryParameters['longitude'], '139.69');
 
         return http.Response(
           jsonEncode({
