@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,6 +13,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   AppConfig.setFlavor(Flavor.stg);
   await initFirebase();
+  unawaited(retryPendingDeviceUnregister());
   final presenceNotificationHandler =
       await initPresenceNotificationAudioHandler();
   runApp(

@@ -71,6 +71,9 @@ class _NoopDeviceRepository implements DeviceRepository {
   Future<void> unregisterToken(String deviceToken) async {
     onUnregisterToken?.call(deviceToken);
   }
+
+  @override
+  Future<void> retryPendingUnregister() async {}
 }
 
 class _TokenPushNotificationService implements PushNotificationService {
