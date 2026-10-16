@@ -93,7 +93,8 @@ void main() {
       final dataSource = LocationSharingRemoteDataSource(client: mockClient);
 
       expect(
-        () => dataSource.sendSos('fake-token', 'group-1', lat: 35.0, lng: 139.0),
+        () =>
+            dataSource.sendSos('fake-token', 'group-1', lat: 35.0, lng: 139.0),
         throwsA(isA<LocationSharingApiException>()),
       );
     });
@@ -111,26 +112,29 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test('listMembers()はGET /groups/:groupId/membersを叩く(位置未共有のメンバーも含む)', () async {
-      final mockClient = MockClient((request) async {
-        expect(request.method, 'GET');
-        expect(request.url.path, '/groups/group-1/members');
-        expect(request.headers['authorization'], 'Bearer fake-token');
-        return _jsonResponse([
-          {
-            'userId': 'user-2',
-            'email': 'invited@example.com',
-            'joinedAt': '2026-07-25T06:30:00+09:00',
-          },
-        ], 200);
-      });
+    test(
+      'listMembers()はGET /groups/:groupId/membersを叩く(位置未共有のメンバーも含む)',
+      () async {
+        final mockClient = MockClient((request) async {
+          expect(request.method, 'GET');
+          expect(request.url.path, '/groups/group-1/members');
+          expect(request.headers['authorization'], 'Bearer fake-token');
+          return _jsonResponse([
+            {
+              'userId': 'user-2',
+              'email': 'invited@example.com',
+              'joinedAt': '2026-07-25T06:30:00+09:00',
+            },
+          ], 200);
+        });
 
-      final dataSource = LocationSharingRemoteDataSource(client: mockClient);
-      final result = await dataSource.listMembers('fake-token', 'group-1');
+        final dataSource = LocationSharingRemoteDataSource(client: mockClient);
+        final result = await dataSource.listMembers('fake-token', 'group-1');
 
-      expect(result, hasLength(1));
-      expect(result.first['email'], 'invited@example.com');
-    });
+        expect(result, hasLength(1));
+        expect(result.first['email'], 'invited@example.com');
+      },
+    );
 
     test('removeMember()はDELETE /groups/:groupId/members/:userIdを叩く', () async {
       final mockClient = MockClient((request) async {
@@ -147,9 +151,7 @@ void main() {
 
     test('removeMember()は204以外の応答でLocationSharingApiExceptionを投げる', () async {
       final mockClient = MockClient((request) async {
-        return _jsonResponse({
-          'error': '他のメンバーを削除できるのはグループのオーナーのみです',
-        }, 403);
+        return _jsonResponse({'error': '他のメンバーを削除できるのはグループのオーナーのみです'}, 403);
       });
 
       final dataSource = LocationSharingRemoteDataSource(client: mockClient);

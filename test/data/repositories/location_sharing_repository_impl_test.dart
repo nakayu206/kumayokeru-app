@@ -33,11 +33,7 @@ class _FakeRemoteDataSource extends LocationSharingRemoteDataSource {
   }
 
   @override
-  Future<void> removeMember(
-    String token,
-    String groupId,
-    String userId,
-  ) async {
+  Future<void> removeMember(String token, String groupId, String userId) async {
     capturedToken = token;
     removedGroupId = groupId;
     removedUserId = userId;

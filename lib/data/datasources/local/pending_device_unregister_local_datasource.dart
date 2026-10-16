@@ -24,7 +24,10 @@ class PendingDeviceUnregisterLocalDataSource {
     final deviceToken = await _storage.read(key: _deviceTokenKey);
     final authToken = await _storage.read(key: _authTokenKey);
     if (deviceToken == null || authToken == null) return null;
-    return PendingDeviceUnregister(deviceToken: deviceToken, authToken: authToken);
+    return PendingDeviceUnregister(
+      deviceToken: deviceToken,
+      authToken: authToken,
+    );
   }
 
   Future<void> clear() async {

@@ -31,6 +31,7 @@ class _FakeDeviceRepository implements DeviceRepository {
   bool shouldThrowOnUnregister = false;
   bool shouldHangOnUnregister = false;
   bool retryPendingUnregisterCalled = false;
+  bool shouldHangOnRetryPendingUnregister = false;
 
   @override
   Future<void> registerToken(String deviceToken, String platform) async {
@@ -56,6 +57,9 @@ class _FakeDeviceRepository implements DeviceRepository {
   @override
   Future<void> retryPendingUnregister() async {
     retryPendingUnregisterCalled = true;
+    if (shouldHangOnRetryPendingUnregister) {
+      return Completer<void>().future;
+    }
   }
 }
 
@@ -162,7 +166,9 @@ void main() {
         );
 
         var completed = false;
-        unawaited(setup.unregisterCurrentDevice().then((_) => completed = true));
+        unawaited(
+          setup.unregisterCurrentDevice().then((_) => completed = true),
+        );
 
         async.elapse(const Duration(seconds: 10));
 
@@ -182,6 +188,26 @@ void main() {
       await setup.retryPendingUnregister();
 
       expect(repository.retryPendingUnregisterCalled, isTrue);
+    });
+
+    test('retryPendingUnregister()は通信が長引いてもタイムアウトする(起動時に新規登録より先に完了させるため)', () {
+      fakeAsync((async) {
+        final service = _FakePushNotificationService();
+        final repository = _FakeDeviceRepository()
+          ..shouldHangOnRetryPendingUnregister = true;
+        final setup = PushNotificationSetup(
+          service,
+          repository,
+          isAndroid: () => true,
+        );
+
+        var completed = false;
+        unawaited(setup.retryPendingUnregister().then((_) => completed = true));
+
+        async.elapse(const Duration(seconds: 10));
+
+        expect(completed, isTrue);
+      });
     });
 
     test('retryPendingUnregister()はAndroid以外では何もしない', () async {

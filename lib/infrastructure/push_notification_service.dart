@@ -4,7 +4,9 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 /// テストでは実際のFirebaseに繋がずフェイク実装に差し替える。
 abstract interface class PushNotificationService {
   /// 権限リクエスト・トークン取得(更新時も同じコールバック)・フォアグラウンド表示を行う。
-  Future<void> initialize({required Future<void> Function(String token) onToken});
+  Future<void> initialize({
+    required Future<void> Function(String token) onToken,
+  });
 
   /// ログアウト時にサーバー側の登録解除で使う。未取得ならnull。
   Future<String?> getCurrentToken();
@@ -30,7 +32,9 @@ class FirebaseCloudMessagingService implements PushNotificationService {
   }) async {
     await _messaging.requestPermission();
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const darwinSettings = DarwinInitializationSettings();
     await _localNotificationsPlugin.initialize(
       settings: const InitializationSettings(

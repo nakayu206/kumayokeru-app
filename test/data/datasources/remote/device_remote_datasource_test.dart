@@ -38,7 +38,9 @@ void main() {
 
     test('201以外の応答はDeviceApiExceptionを投げる', () async {
       final mockClient = MockClient((request) async {
-        return _jsonResponse({'error': 'platform は "android" か "ios" で指定してください'}, 400);
+        return _jsonResponse({
+          'error': 'platform は "android" か "ios" で指定してください',
+        }, 400);
       });
 
       final dataSource = DeviceRemoteDataSource(client: mockClient);

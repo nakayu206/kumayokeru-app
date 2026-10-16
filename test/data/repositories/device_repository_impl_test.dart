@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -43,6 +44,7 @@ class _FakeRemoteDataSource extends DeviceRemoteDataSource {
   String? capturedDeviceToken;
   String? capturedPlatform;
   bool shouldThrowOnUnregister = false;
+  Completer<void>? hangingUnregisterCompleter;
 
   @override
   Future<void> registerToken(
@@ -60,6 +62,11 @@ class _FakeRemoteDataSource extends DeviceRemoteDataSource {
     String authToken, {
     required String deviceToken,
   }) async {
+    if (hangingUnregisterCompleter != null) {
+      // 通信が完了する前にrepository側の退避処理が済んでいるかを検証するため、
+      // テストから明示的にcomplete()するまで待たせる。
+      return hangingUnregisterCompleter!.future;
+    }
     if (shouldThrowOnUnregister) {
       throw DeviceApiException('解除に失敗しました(テスト用)');
     }
@@ -78,8 +85,7 @@ String _buildJwt(Map<String, dynamic> payload) {
 }
 
 String _jwtWithExp(Duration offsetFromNow) {
-  final exp =
-      DateTime.now().add(offsetFromNow).millisecondsSinceEpoch ~/ 1000;
+  final exp = DateTime.now().add(offsetFromNow).millisecondsSinceEpoch ~/ 1000;
   return _buildJwt({'sub': 'user-1', 'email': 'taro@example.com', 'exp': exp});
 }
 
@@ -116,6 +122,8 @@ void main() {
       final repository = DeviceRepositoryImpl(
         remoteDataSource: remote,
         tokenLocalDataSource: _FakeTokenLocalDataSource()..token = 'fake-token',
+        pendingUnregisterLocalDataSource:
+            _FakePendingUnregisterLocalDataSource(),
       );
 
       await repository.unregisterToken('fcm-token');
@@ -142,12 +150,39 @@ void main() {
       expect(pendingStore.pending?.authToken, 'fake-token');
     });
 
+    test('unregisterToken()は通信が完了するより先に退避済みになっている(タイムアウトで取り逃さないため)', () async {
+      final hangingCompleter = Completer<void>();
+      final remote = _FakeRemoteDataSource()
+        ..hangingUnregisterCompleter = hangingCompleter;
+      final pendingStore = _FakePendingUnregisterLocalDataSource();
+      final repository = DeviceRepositoryImpl(
+        remoteDataSource: remote,
+        tokenLocalDataSource: _FakeTokenLocalDataSource()..token = 'fake-token',
+        pendingUnregisterLocalDataSource: pendingStore,
+      );
+
+      final future = repository.unregisterToken('fcm-token');
+      await pumpEventQueue();
+
+      // 通信がまだ終わっていなくても、呼び出し側のタイムアウトやアプリ終了で
+      // 待てなくなった場合に備えて、退避は既に完了していなければならない。
+      expect(pendingStore.pending?.deviceToken, 'fcm-token');
+      expect(pendingStore.pending?.authToken, 'fake-token');
+
+      hangingCompleter.complete();
+      await future;
+
+      // 無事成功したので退避は消える。
+      expect(pendingStore.pending, isNull);
+    });
+
     test('retryPendingUnregister()は保存されたトークンが無ければ何もしない', () async {
       final remote = _FakeRemoteDataSource();
       final repository = DeviceRepositoryImpl(
         remoteDataSource: remote,
         tokenLocalDataSource: _FakeTokenLocalDataSource(),
-        pendingUnregisterLocalDataSource: _FakePendingUnregisterLocalDataSource(),
+        pendingUnregisterLocalDataSource:
+            _FakePendingUnregisterLocalDataSource(),
       );
 
       await repository.retryPendingUnregister();

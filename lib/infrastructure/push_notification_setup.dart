@@ -51,9 +51,9 @@ class PushNotificationSetup {
         _unregisterTimeout,
       );
       if (token == null) return;
-      await _deviceRepository.unregisterToken(token).timeout(
-        _unregisterTimeout,
-      );
+      await _deviceRepository
+          .unregisterToken(token)
+          .timeout(_unregisterTimeout);
     } on Exception catch (e) {
       debugPrint('デバイストークンの登録解除に失敗しました(次回起動時に再試行): $e');
     }
@@ -61,11 +61,16 @@ class PushNotificationSetup {
 
   /// 前回のunregisterCurrentDevice()が失敗して残っているトークンがあれば
   /// 再試行する。ログイン状態に関わらず、アプリ起動時に呼んでよい。
+  /// start()(ログイン後の新規登録)より必ず先に完了させること。そうしないと、
+  /// 同じデバイストークンに対する古い解除リクエストが新しい登録を後から
+  /// 消してしまう競合が起きる。
   Future<void> retryPendingUnregister() async {
     if (!_isAndroid()) return;
 
     try {
-      await _deviceRepository.retryPendingUnregister();
+      await _deviceRepository.retryPendingUnregister().timeout(
+        _unregisterTimeout,
+      );
     } on Exception catch (e) {
       debugPrint('デバイストークンの登録解除の再試行に失敗しました: $e');
     }

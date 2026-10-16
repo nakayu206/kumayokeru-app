@@ -72,7 +72,9 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
       state = state.copyWith(isLoading: false, group: groups.first);
       await refreshLocations();
     } on Exception catch (e) {
-      if (mounted) state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      if (mounted) {
+        state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      }
     }
   }
 
@@ -84,7 +86,9 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
       state = state.copyWith(isLoading: false, group: group);
       await refreshLocations();
     } on Exception catch (e) {
-      if (mounted) state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      if (mounted) {
+        state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      }
     }
   }
 
@@ -98,7 +102,9 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
       state = state.copyWith(isLoading: false);
       await refreshLocations();
     } on Exception catch (e) {
-      if (mounted) state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      if (mounted) {
+        state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      }
     }
   }
 
@@ -157,7 +163,9 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
       state = state.copyWith(isLoading: false);
       await refreshLocations();
     } on Exception catch (e) {
-      if (mounted) state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      if (mounted) {
+        state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      }
     }
   }
 
@@ -172,7 +180,9 @@ class LocationSharingNotifier extends StateNotifier<LocationSharingState> {
       if (!mounted) return;
       state = const LocationSharingState();
     } on Exception catch (e) {
-      if (mounted) state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      if (mounted) {
+        state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      }
     }
   }
 }

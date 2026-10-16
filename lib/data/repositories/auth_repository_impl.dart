@@ -75,7 +75,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
     final email = payload['email'] as String;
     // 名前未キャッシュ(旧バージョンからの引き継ぎ等)はemailのローカル部で暫定表示する。
-    final name = await _tokenLocalDataSource.readName() ?? email.split('@').first;
+    final name =
+        await _tokenLocalDataSource.readName() ?? email.split('@').first;
     return _userFromToken(token, name);
   }
 

@@ -18,7 +18,8 @@ class DeviceRepositoryImpl implements DeviceRepository {
 
   final DeviceRemoteDataSource _remoteDataSource;
   final AuthTokenLocalDataSource _tokenLocalDataSource;
-  final PendingDeviceUnregisterLocalDataSource _pendingUnregisterLocalDataSource;
+  final PendingDeviceUnregisterLocalDataSource
+  _pendingUnregisterLocalDataSource;
 
   @override
   Future<void> registerToken(String deviceToken, String platform) async {
@@ -40,19 +41,20 @@ class DeviceRepositoryImpl implements DeviceRepository {
       throw DeviceApiException('ログインが必要です');
     }
 
-    try {
-      await _remoteDataSource.unregisterToken(
-        authToken,
-        deviceToken: deviceToken,
-      );
-    } on DeviceApiException {
-      // ログアウトでJWTが消える前に、今のうちに退避して後で再試行できるようにする。
-      await _pendingUnregisterLocalDataSource.save(
-        deviceToken: deviceToken,
-        authToken: authToken,
-      );
-      rethrow;
-    }
+    // 通信を始める前に退避しておく(成功した場合のみ後で消す)。失敗時にだけ保存する
+    // 形だと、呼び出し側のタイムアウトやアプリ終了で通信の完了を待てなかった場合に
+    // 保存されず、再試行の手がかりを失ってしまう。
+    await _pendingUnregisterLocalDataSource.save(
+      deviceToken: deviceToken,
+      authToken: authToken,
+    );
+
+    await _remoteDataSource.unregisterToken(
+      authToken,
+      deviceToken: deviceToken,
+    );
+
+    await _pendingUnregisterLocalDataSource.clear();
   }
 
   @override

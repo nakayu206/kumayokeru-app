@@ -117,11 +117,7 @@ class LocationSharingRemoteDataSource {
 
   /// userIdに自分自身を指定するとグループから脱退、オーナーが他人を指定すると
   /// そのメンバーを削除する(routes/groups.tsの`DELETE /groups/:groupId/members/:userId`参照)。
-  Future<void> removeMember(
-    String token,
-    String groupId,
-    String userId,
-  ) async {
+  Future<void> removeMember(String token, String groupId, String userId) async {
     final response = await _send(
       'DELETE',
       '/groups/$groupId/members/$userId',

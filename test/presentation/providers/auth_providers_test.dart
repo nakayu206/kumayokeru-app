@@ -23,7 +23,11 @@ class _FakeAuthRepository implements AuthRepository {
     if (nextErrorMessage != null) {
       throw AuthApiException(nextErrorMessage!);
     }
-    final user = AuthUser(id: 'user-1', email: email, name: email.split('@').first);
+    final user = AuthUser(
+      id: 'user-1',
+      email: email,
+      name: email.split('@').first,
+    );
     loggedInUser = user;
     return user;
   }
@@ -106,7 +110,9 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           authRepositoryProvider.overrideWithValue(fakeRepository),
-          pushNotificationSetupProvider.overrideWithValue(_noopPushNotificationSetup),
+          pushNotificationSetupProvider.overrideWithValue(
+            _noopPushNotificationSetup,
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -129,7 +135,9 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           authRepositoryProvider.overrideWithValue(fakeRepository),
-          pushNotificationSetupProvider.overrideWithValue(_noopPushNotificationSetup),
+          pushNotificationSetupProvider.overrideWithValue(
+            _noopPushNotificationSetup,
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -150,7 +158,9 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           authRepositoryProvider.overrideWithValue(fakeRepository),
-          pushNotificationSetupProvider.overrideWithValue(_noopPushNotificationSetup),
+          pushNotificationSetupProvider.overrideWithValue(
+            _noopPushNotificationSetup,
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -172,7 +182,9 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           authRepositoryProvider.overrideWithValue(fakeRepository),
-          pushNotificationSetupProvider.overrideWithValue(_noopPushNotificationSetup),
+          pushNotificationSetupProvider.overrideWithValue(
+            _noopPushNotificationSetup,
+          ),
         ],
       );
       addTearDown(container.dispose);

@@ -51,7 +51,10 @@ class DeviceRemoteDataSource {
     }
   }
 
-  Future<void> unregisterToken(String authToken, {required String deviceToken}) async {
+  Future<void> unregisterToken(
+    String authToken, {
+    required String deviceToken,
+  }) async {
     final uri = _baseUrl.replace(path: '/devices');
 
     http.Response response;

@@ -486,9 +486,7 @@ class _AuthenticatedLocationSharingViewState
             onPressed: () {
               Navigator.of(dialogContext).pop();
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const PrivacySettingsPage(),
-                ),
+                MaterialPageRoute(builder: (_) => const PrivacySettingsPage()),
               );
             },
             child: const Text('プライバシー設定を開く'),

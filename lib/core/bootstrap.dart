@@ -38,7 +38,9 @@ Future<void> initFirebase() async {
 }
 
 /// 前回ログアウト時のデバイストークン解除が失敗して残っていれば再試行する。
-/// ログイン状態に関わらず起動時に呼べるよう、runApp()の前に(待たずに)呼ぶこと。
+/// ログイン状態に関わらず起動時に呼べる。ログイン後の新規デバイストークン登録と
+/// 競合しないよう、runApp()より前にawaitで完了させてから呼び出すこと
+/// (待機時間には上限があるため、通信が無い場合はほぼ即時に返る)。
 Future<void> retryPendingDeviceUnregister() async {
   final setup = PushNotificationSetup(
     FirebaseCloudMessagingService(),

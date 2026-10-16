@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,7 +11,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   AppConfig.setFlavor(Flavor.dev);
   await initFirebase();
-  unawaited(retryPendingDeviceUnregister());
+  // ログイン後の新規デバイストークン登録と競合しないよう、ここで完了させる。
+  await retryPendingDeviceUnregister();
   final presenceNotificationHandler =
       await initPresenceNotificationAudioHandler();
   runApp(
