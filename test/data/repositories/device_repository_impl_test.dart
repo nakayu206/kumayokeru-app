@@ -260,24 +260,20 @@ void main() {
         tokenLocalDataSource: _FakeTokenLocalDataSource()..token = 'fake-token',
         registrationLocalDataSource: registrationStore,
         pendingUnregisterLocalDataSource: pendingStore,
-        // 直列化キューが前の操作(ここでは解除)の完了を待ちすぎないよう、
-        // テストでは待機上限を短くする(実時間で5秒待たせないため)。
-        operationQueueTimeout: const Duration(milliseconds: 10),
       );
 
       // 1. 最初の登録(reg-1)。
       await repository.registerToken('fcm-token', 'android');
 
-      // 2. 解除がタイムアウトする状況を模す(退避だけ完了し、通信は未解決のまま)。
+      // 2. 解除の通信がタイムアウトする状況を模す(退避だけ完了し、通信は未解決の
+      // まま)。登録IDは既にあるので、解除はすぐに通信を開始する。
       final hangingCompleter = Completer<void>();
       remote.hangingUnregisterCompleter = hangingCompleter;
       final unregisterFuture = repository.unregisterToken('fcm-token');
       await pumpEventQueue();
 
-      // 3. タイムアウト後、起動処理が進んで同じトークンが再登録される(reg-2)。
-      // (直列化キューは、前の解除がまだ終わっていなくても上の待機上限で
-      // 先に進む。これにより、サーバー側の世代チェックだけが安全網として残る
-      // 状況を意図的に作っている。)
+      // 3. 呼び出し側がタイムアウトを諦めた後、起動処理が進んで同じトークンが
+      // 再登録される(reg-2)。古い解除の通信はまだ裏で動き続けている。
       remote.hangingUnregisterCompleter = null;
       remote.nextRegistrationId = 'reg-2';
       await repository.registerToken('fcm-token', 'android');
@@ -297,16 +293,16 @@ void main() {
       expect(remote.serverRegistrations['fcm-token'], 'reg-2');
     });
 
-    test('登録応答が遅延している間にログアウト(解除)が呼ばれても、登録完了後に'
-        '解除が正しく実行され、ログアウト済みアカウントに通知登録が残らない', () async {
+    test('登録応答が遅延している間にログアウト(解除)が呼ばれても、解除要求は'
+        '即座に記録され、ログアウトの待機時間をブロックしない', () async {
       final remote = _FakeRemoteDataSource()..nextRegistrationId = 'reg-1';
       final registrationStore = _FakeRegistrationLocalDataSource();
-      final pendingStore = _FakePendingUnregisterLocalDataSource();
       final repository = DeviceRepositoryImpl(
         remoteDataSource: remote,
         tokenLocalDataSource: _FakeTokenLocalDataSource()..token = 'fake-token',
         registrationLocalDataSource: registrationStore,
-        pendingUnregisterLocalDataSource: pendingStore,
+        pendingUnregisterLocalDataSource:
+            _FakePendingUnregisterLocalDataSource(),
       );
 
       // 1. 登録(POST)がまだサーバーから応答を受け取っていない状態を作る。
@@ -315,26 +311,59 @@ void main() {
       final registerFuture = repository.registerToken('fcm-token', 'android');
       await pumpEventQueue();
 
-      // 2. その間にログアウトが解除を試みる。登録が完了するまでは、この端末で
-      // 登録した記録がまだ無い(保存前)ため、ここでは即座には完了しない
-      // (register側の処理が終わるまでキューで待つ)。
-      final unregisterFuture = repository.unregisterToken('fcm-token');
-      await pumpEventQueue();
+      // 2. その間にログアウトが解除を試みる。登録IDがまだ無いため通信はせず、
+      // 解除要求を記録するだけで即座に返る(登録完了を待たない)。
+      await repository.unregisterToken('fcm-token');
       expect(remote.capturedDeviceToken, isNull);
       expect(registrationStore.registrationId, isNull);
 
       // 3. 登録の応答がようやく到着する。
       hangingRegister.complete();
       await registerFuture;
-      expect(registrationStore.registrationId, 'reg-1');
-      expect(remote.serverRegistrations['fcm-token'], 'reg-1');
 
-      // 4. キューで待っていた解除が、今保存されたばかりの登録IDで実行される。
-      await unregisterFuture;
-
-      // ログアウト済みのアカウントに通知登録が残っていない。
+      // 登録が完了した時点で、記録されていた解除要求が自動的に実行され、
+      // ログアウト済みアカウントに通知登録が残らない。
       expect(remote.serverRegistrations['fcm-token'], isNull);
       expect(remote.unregisterAttempts, ['reg-1']);
+    });
+
+    test('登録が5秒を超えて遅延し、その間にJWTが削除(ログアウト完了)されても、'
+        'ログアウト要求時点のJWTで解除され、ログアウト済みアカウントに通知登録が'
+        '残らない', () async {
+      final remote = _FakeRemoteDataSource()..nextRegistrationId = 'reg-1';
+      final registrationStore = _FakeRegistrationLocalDataSource();
+      final pendingStore = _FakePendingUnregisterLocalDataSource();
+      final tokenStore = _FakeTokenLocalDataSource()..token = 'fake-token';
+      final repository = DeviceRepositoryImpl(
+        remoteDataSource: remote,
+        tokenLocalDataSource: tokenStore,
+        registrationLocalDataSource: registrationStore,
+        pendingUnregisterLocalDataSource: pendingStore,
+      );
+
+      // 1. 登録(POST)が長時間(5秒超を想定)応答を返さない状態を作る。
+      final hangingRegister = Completer<void>();
+      remote.hangingRegisterCompleter = hangingRegister;
+      final registerFuture = repository.registerToken('fcm-token', 'android');
+      await pumpEventQueue();
+
+      // 2. ログアウトが解除を試みる(この時点ではまだJWTが有効)。
+      await repository.unregisterToken('fcm-token');
+
+      // 3. ログアウト処理が完了し、JWTが端末から削除される
+      // (AuthRepositoryImpl.logout()相当)。
+      tokenStore.token = null;
+
+      // 4. 5秒を大幅に超えて、登録の応答がようやく到着する。
+      hangingRegister.complete();
+      await registerFuture;
+
+      // 今のJWT(既に削除されnull)ではなく、ログアウト要求時点でまだ有効
+      // だったJWTを使って自動的に解除されており、通知登録が残っていない。
+      expect(remote.serverRegistrations['fcm-token'], isNull);
+      expect(remote.unregisterAttempts, ['reg-1']);
+      expect(remote.capturedAuthToken, 'fake-token');
+      expect(pendingStore.pending, isNull);
     });
 
     test('retryPendingUnregister()は保存されたトークンが無ければ何もしない', () async {
